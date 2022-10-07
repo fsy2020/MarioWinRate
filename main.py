@@ -11,7 +11,11 @@ def create_csv():
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    create_csv()
+    user_id = "Y9P7BN4JF"
+    user_ids = ["Y9P7BN4JF", "0MMCG9V4G"]
 
+    for user_id in user_ids:
+        path = "C:\\Users\\Codex\\Desktop\\%s.csv" % user_id
+        print(path)
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
