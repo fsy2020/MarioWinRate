@@ -60,16 +60,26 @@ class API():
             writer = csv.writer(csvfile)
             writer.writerow([win, plays, versus_rating, rate ,rate_change, win_total, plays_total, self.time_n])
 
+    def create_csv(self,user_id):
+        with open(user_id + ".csv", "w") as csvfile:
+            writer = csv.writer(csvfile)
+
+            # 先写入header
+            writer.writerow(["wins","plays","win_rate","rate","rate_change","wins_total","plays_total","time"])
+            self.write_to_csv(user_id)
 
 
 
 if __name__ == '__main__':
     path = "C:\\Users\\Codex\\Desktop\\mario.csv"
     time_n = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-    user_id = "Y9P7BN4JF"
-    #user_id = "0MMCG9V4G"
+    #user_id = "Y9P7BN4JF"
+    user_id = "0MMCG9V4G"
+
 
     api = API(path,time_n)
+
+    api.create_csv(user_id)
     win,plays,rate,rate_change,win_total,plays_total,versus_rating = api.get_print(user_id)
 
     if (plays != -1):
