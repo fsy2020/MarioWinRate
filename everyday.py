@@ -23,10 +23,8 @@ class API():
     def get_user_info(self,user_id):
         url = "https://tgrcode.com/mm2/user_info/%s" % user_id
         res = requests.get(url)
-        try:
-            return json.loads(res.text)
-        except Exception:
-            return res.text
+        return json.loads(res.text)
+
 
 
     def get_print(self,user_id):
@@ -76,7 +74,9 @@ if __name__ == '__main__':
     for user_id in user_ids:
 
         api = API(user_id)
-        name = api.get_user_info(user_id)['name']
+        info = api.get_user_info(user_id)
+        name = info['name']
+        print(name)
         path =  name + ".csv"
         if (os.path.exists( name + ".csv") == False):
             api.create_csv(user_id)
