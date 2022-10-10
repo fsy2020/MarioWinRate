@@ -23,7 +23,11 @@ class API():
     def get_user_info(self,user_id):
         url = "https://tgrcode.com/mm2/user_info/%s" % user_id
         res = requests.get(url)
-        return json.loads(res.text)
+        print(res.status_code)
+
+        #放在while循环中，防止json解析报错
+        while(res.status_code==200):
+            return json.loads(res.text)
 
 
 
@@ -69,7 +73,7 @@ if __name__ == '__main__':
     start = time.time()
     time_n = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
     user_id = "Y9P7BN4JF"
-    user_ids = ["Y9P7BN4JF", "0MMCG9V4G", "SQW0796SF", "GDH8R4V4G", "D221SPHLF","Q5MBL99QG","D049HCB8G"]
+    user_ids = ["Y9P7BN4JF", "0MMCG9V4G", "SQW0796SF", "GDH8R4V4G", "D221SPHLF","Q5MBL99QG","D049HCB8G","1VVRCXQPF","D8CJ2W62H"," LDMLC6RLG","0JR5R5BJG","08VW66RLF","4QVF9V6RF"]
 
     for user_id in user_ids:
 
