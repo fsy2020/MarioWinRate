@@ -23,11 +23,13 @@ class API():
     def get_user_info(self,user_id):
         url = "https://tgrcode.com/mm2/user_info/%s" % user_id
         res = requests.get(url)
-        print(res.status_code)
-
+        time.sleep(1)
         #放在while循环中，防止json解析报错
-        while(res.status_code==200):
+        if(res.status_code==200):
             return json.loads(res.text)
+        else:
+            print("json loads failed")
+
 
 
 
@@ -73,14 +75,17 @@ if __name__ == '__main__':
     start = time.time()
     time_n = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
     user_id = "Y9P7BN4JF"
-    user_ids = ["Y9P7BN4JF", "0MMCG9V4G", "SQW0796SF", "GDH8R4V4G", "D221SPHLF","Q5MBL99QG","D049HCB8G","1VVRCXQPF","D8CJ2W62H"," LDMLC6RLG","0JR5R5BJG","08VW66RLF","4QVF9V6RF"]
+    user_ids = ["Y9P7BN4JF", "0MMCG9V4G", "SQW0796SF", "GDH8R4V4G", "D221SPHLF","Q5MBL99QG","D049HCB8G","1VVRCXQPF","D8CJ2W62H","LDMLC6RLG","0JR5R5BJG","4QVF9V6RF","08VW66RLF"]
 
     for user_id in user_ids:
 
         api = API(user_id)
         info = api.get_user_info(user_id)
-        name = info['name']
-        print(name)
+        try:
+            name = info['name']
+        except:
+            print(name)
+
         path =  name + ".csv"
         if (os.path.exists( name + ".csv") == False):
             api.create_csv(user_id)
@@ -95,7 +100,8 @@ if __name__ == '__main__':
                                                                                                                win_total,
                                                                                                                plays_total,
                                                                                                                time_n))
-
+    end = time.time()
+    print(end-start)
 
 
 
