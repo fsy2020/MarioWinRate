@@ -3,7 +3,7 @@ import json
 import time
 import csv
 import os
-
+import sys
 
 class API():
     def __init__(self,user_id):
@@ -24,13 +24,13 @@ class API():
         url = "https://tgrcode.com/mm2/user_info/%s" % user_id
         res = requests.get(url)
         time.sleep(1)
-        #放在while循环中，防止json解析报错
+        #报错自动退出
 
-        if(res.status_code==200):
+        try:
             return json.loads(res.text)
-        else:
+        except:
             print("json loads failed")
-
+            sys.exit(1)
 
 
 
