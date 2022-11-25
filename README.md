@@ -1,4 +1,4 @@
-# English version(2022/11/16 Nintendo version update, unable to use TGRAPI)
+# English version
 ## Super Mario Maker 2 Winning Statistics Tutorial
 Count the number of wins and totals per day, run and record them daily.
 
@@ -18,7 +18,7 @@ The first run will record the current information, each run will record win rate
 
 
 
-# 中文(2022/11/16日任天堂版本更新，无法使用TGRAPI)
+# 中文
 ## 马造胜率统计教程
 统计每天的马造胜利数和总游玩数，并自动记录。
 
