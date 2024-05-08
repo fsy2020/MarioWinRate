@@ -8,8 +8,10 @@ Add your own player ID to the user_ids array.
 ![image](./user_id.png)
 
 ### How to run
-I am putting it on the Raspberry Pi with the crontab command to run the everyday.py file automatically every day at 8:00. The crontab command is as follows, please change the file address.  
-0 8 * * * python3 /home/pi/everyday.py >/dev/null 2>&1
+I am putting it on the Raspberry Pi with the crontab command to run the everyday.py file automatically every day at 8:00. The crontab command is as follows, please change the file address. 
+
+```crontab -e```
+```0 8 * * * python3 /home/pi/everyday.py >/dev/null 2>&1```
 
 ![image](./crontab.png)
 ### Result
