@@ -9,6 +9,7 @@ Add your own player ID to the user_ids array.
 
 ### How to run
 I am putting it on the Raspberry Pi with the crontab command to run the everyday.py file automatically every day at 8:00. The crontab command is as follows, please change the file address.  
+0 8 * * * python3 /home/pi/everyday.py >/dev/null 2>&1
 
 ![image](./crontab.png)
 ### Result
@@ -29,6 +30,7 @@ user_ids数组中添加自己的马造游玩ID。
 
 ### 运行
 我是放在树莓派上用crontab命令每天8点自动运行everyday.py文件，计算上一天的胜利数，游玩总数，胜率，分数变动和时间等参数，crontab的命令如下，请修改文件地址。  
+0 8 * * * python3 /home/pi/everyday.py >/dev/null 2>&1
 
 ![image](./crontab.png)
 ### 结果
