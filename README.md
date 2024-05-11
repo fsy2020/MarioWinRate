@@ -1,5 +1,5 @@
-# English version
-## Super Mario Maker 2 Winning Statistics Tutorial
+# Super Mario Maker 2 Winning Statistics Tutorial
+## English version
 Count the number of wins and totals per day, run and record them daily.
 
 ### Method
@@ -26,8 +26,8 @@ The first run will record the current information, each run will record win rate
 
 
 
-# 中文
-## 马造胜率统计教程
+# 马造胜率统计教程
+## 中文
 统计每天的马造胜利数和总游玩数，并自动记录。
 
 ### 方法
@@ -37,7 +37,12 @@ user_ids数组中添加自己的马造游玩ID。
 
 ### 运行
 我是放在树莓派上用crontab命令每天8点自动运行everyday.py文件，计算上一天的胜利数，游玩总数，胜率，分数变动和时间等参数，crontab的命令如下，请修改文件地址。  
-0 8 * * * python3 /home/pi/everyday.py >/dev/null 2>&1
+```sudo apt-get install vim```  
+```su root```  
+```chomod 777 everyday.py```  
+```crontab -e```  
+```0 5,6 * * * /usr/bin/python3 /home/pi/everyday.py >/home/pi/cron.log 2>&1```  
+```service cron restart``` 
 
 ![image](./crontab.png)
 ### 结果
