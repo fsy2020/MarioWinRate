@@ -36,7 +36,7 @@ user_ids数组中添加自己的马造游玩ID。
 ![image](./user_id.png)
 
 ### 运行
-我是放在树莓派上用crontab命令每天8点自动运行everyday.py文件，计算上一天的胜利数，游玩总数，胜率，分数变动和时间等参数，crontab的命令如下，请修改文件地址。  
+我是放在树莓派上用crontab命令每天8点自动运行everyday.py文件，计算上一天的胜利数，游玩总数，胜率，分数变动和时间等参数，crontab的命令如下，请修改文件地址。 需要对生成的每一个文件赋予权限，chmod 777
 ```sudo apt-get install vim```  
 ```su root```  
 ```chomod 777 everyday.py```  
