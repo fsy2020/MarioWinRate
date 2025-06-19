@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mario Maker 2 数据管理</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .admin-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .section-title {
+            color: #fff;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .input-group input {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 16px;
+        }
+        
+        .input-group input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-success {
+            background: linear-gradient(45deg, #56ab2f 0%, #a8e6cf 100%);
+            color: white;
+        }
+        
+        .btn-warning {
+            background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(45deg, #fc466b 0%, #3f5efb 100%);
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .result-section {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            display: none;
+        }
+        
+        .result-section.show {
+            display: block;
+        }
+        
+        .result-section.success {
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .result-section.error {
+            border-left: 4px solid #f44336;
+        }
+        
+        .user-info {
+            color: #fff;
+            line-height: 1.6;
+        }
+        
+        .user-info h3 {
+            color: #64b5f6;
+            margin-bottom: 10px;
+        }
+        
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .stats-table th,
+        .stats-table td {
+            padding: 10px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+        
+        .stats-table th {
+            background: rgba(255, 255, 255, 0.1);
+            font-weight: bold;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            color: #fff;
+            padding: 20px;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #fff;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .navigation {
+            margin-bottom: 20px;
+        }
+        
+        .nav-link {
+            color: #64b5f6;
+            text-decoration: none;
+            margin-right: 20px;
+        }
+        
+        .nav-link:hover {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <h1 style="color: #fff; text-align: center; margin-bottom: 30px;">
+            <i class="fas fa-cog"></i> Mario Maker 2 数据管理
+        </h1>
+        
+        <div class="navigation">
+            <a href="index.html" class="nav-link">
+                <i class="fas fa-home"></i> 返回主页
+            </a>
+        </div>
+        
+        <!-- 用户数据获取 -->
+        <div class="admin-section">
+            <h2 class="section-title">
+                <i class="fas fa-user-plus"></i>
+                获取用户数据
+            </h2>
+            <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 20px;">
+                输入用户ID来获取最新的游戏数据并添加到数据库中
+            </p>
+            
+            <div class="input-group">
+                <input type="text" id="userIdInput" placeholder="请输入用户ID (例如: Y9P7BN4JF)" />
+                <button class="btn btn-primary" onclick="fetchUserData()">
+                    <i class="fas fa-download"></i> 获取数据
+                </button>
+            </div>
+            
+            <div class="loading" id="fetchLoading">
+                <div class="spinner"></div>
+                <p>正在获取用户数据...</p>
+            </div>
+            
+            <div class="result-section" id="fetchResult">
+                <div id="fetchResultContent"></div>
+            </div>
+        </div>
+        
+        <!-- 数据库管理 -->
+        <div class="admin-section">
+            <h2 class="section-title">
+                <i class="fas fa-database"></i>
+                数据库管理
+            </h2>
+            
+            <div class="input-group">
+                <button class="btn btn-success" onclick="migrateData()">
+                    <i class="fas fa-upload"></i> 从CSV迁移数据
+                </button>
+                <button class="btn btn-warning" onclick="updateAllUsers()">
+                    <i class="fas fa-sync"></i> 更新所有用户
+                </button>
+                <button class="btn btn-primary" onclick="showAllUsers()">
+                    <i class="fas fa-users"></i> 查看所有用户
+                </button>
+            </div>
+            
+            <div class="loading" id="adminLoading">
+                <div class="spinner"></div>
+                <p id="adminLoadingText">正在处理...</p>
+            </div>
+            
+            <div class="result-section" id="adminResult">
+                <div id="adminResultContent"></div>
+            </div>
+        </div>
+        
+        <!-- 用户查询 -->
+        <div class="admin-section">
+            <h2 class="section-title">
+                <i class="fas fa-search"></i>
+                用户查询
+            </h2>
+            
+            <div class="input-group">
+                <input type="text" id="searchUserInput" placeholder="输入用户ID或代码查询" />
+                <button class="btn btn-primary" onclick="searchUser()">
+                    <i class="fas fa-search"></i> 查询
+                </button>
+            </div>
+            
+            <div class="result-section" id="searchResult">
+                <div id="searchResultContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取用户数据
+        async function fetchUserData() {
+            const userId = document.getElementById('userIdInput').value.trim();
+            
+            if (!userId) {
+                alert('请输入用户ID');
+                return;
+            }
+            
+            const loading = document.getElementById('fetchLoading');
+            const result = document.getElementById('fetchResult');
+            const resultContent = document.getElementById('fetchResultContent');
+            
+            loading.classList.add('show');
+            result.classList.remove('show');
+            
+            try {
+                const response = await fetch('/api/fetch-user-data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ user_id: userId })
+                });
+                
+                const data = await response.json();
+                
+                loading.classList.remove('show');
+                result.classList.add('show');
+                
+                if (data.success) {
+                    result.classList.add('success');
+                    result.classList.remove('error');
+                    
+                    let content = `
+                        <h3>✅ ${data.message}</h3>
+                        <div class="user-info">
+                    `;
+                    
+                    if (data.user) {
+                        content += `
+                            <p><strong>用户名:</strong> ${data.user.name}</p>
+                            <p><strong>代码:</strong> ${data.user.code}</p>
+                            <p><strong>用户ID:</strong> ${data.user.user_id}</p>
+                        `;
+                    }
+                    
+                    if (data.latest_stat) {
+                        const stat = data.latest_stat;
+                        content += `
+                            <h4>最新统计数据:</h4>
+                            <p><strong>今日胜利数:</strong> ${stat.wins}</p>
+                            <p><strong>今日游戏数:</strong> ${stat.plays}</p>
+                            <p><strong>今日胜率:</strong> ${(stat.win_rate * 100).toFixed(2)}%</p>
+                            <p><strong>当前分数:</strong> ${stat.rate}</p>
+                            <p><strong>分数变动:</strong> ${stat.rate_change > 0 ? '+' : ''}${stat.rate_change}</p>
+                            <p><strong>总胜利数:</strong> ${stat.wins_total}</p>
+                            <p><strong>总游戏数:</strong> ${stat.plays_total}</p>
+                            <p><strong>记录时间:</strong> ${stat.record_time}</p>
+                        `;
+                    }
+                    
+                    content += '</div>';
+                    resultContent.innerHTML = content;
+                } else {
+                    result.classList.add('error');
+                    result.classList.remove('success');
+                    resultContent.innerHTML = `<h3>❌ 错误</h3><p>${data.error}</p>`;
+                }
+                
+            } catch (error) {
+                loading.classList.remove('show');
+                result.classList.add('show', 'error');
+                result.classList.remove('success');
+                resultContent.innerHTML = `<h3>❌ 网络错误</h3><p>${error.message}</p>`;
+            }
+        }
+        
+        // 迁移数据
+        async function migrateData() {
+            const loading = document.getElementById('adminLoading');
+            const result = document.getElementById('adminResult');
+            const resultContent = document.getElementById('adminResultContent');
+            const loadingText = document.getElementById('adminLoadingText');
+            
+            loadingText.textContent = '正在从CSV迁移数据...';
+            loading.classList.add('show');
+            result.classList.remove('show');
+            
+            try {
+                const response = await fetch('/api/migrate', { method: 'POST' });
+                const data = await response.json();
+                
+                loading.classList.remove('show');
+                result.classList.add('show');
+                
+                if (data.success) {
+                    result.classList.add('success');
+                    result.classList.remove('error');
+                    resultContent.innerHTML = `<h3>✅ ${data.message}</h3>`;
+                } else {
+                    result.classList.add('error');
+                    result.classList.remove('success');
+                    resultContent.innerHTML = `<h3>❌ 错误</h3><p>${data.error}</p>`;
+                }
+                
+            } catch (error) {
+                loading.classList.remove('show');
+                result.classList.add('show', 'error');
+                result.classList.remove('success');
+                resultContent.innerHTML = `<h3>❌ 网络错误</h3><p>${error.message}</p>`;
+            }
+        }
+        
+        // 更新所有用户
+        async function updateAllUsers() {
+            if (!confirm('这将更新所有用户的数据，可能需要较长时间。确定继续吗？')) {
+                return;
+            }
+            
+            const loading = document.getElementById('adminLoading');
+            const result = document.getElementById('adminResult');
+            const resultContent = document.getElementById('adminResultContent');
+            const loadingText = document.getElementById('adminLoadingText');
+            
+            loadingText.textContent = '正在更新所有用户数据，请稍候...';
+            loading.classList.add('show');
+            result.classList.remove('show');
+            
+            try {
+                const response = await fetch('/api/update-all-users', { method: 'POST' });
+                const data = await response.json();
+                
+                loading.classList.remove('show');
+                result.classList.add('show');
+                
+                if (data.success) {
+                    result.classList.add('success');
+                    result.classList.remove('error');
+                    let content = `
+                        <h3>✅ ${data.message}</h3>
+                        <p>成功更新: ${data.successful_updates} 个用户</p>
+                    `;
+                    
+                    if (data.failed_updates && data.failed_updates.length > 0) {
+                        content += `<p>失败: ${data.failed_updates.length} 个用户</p>`;
+                        content += `<details><summary>查看失败列表</summary><pre>${data.failed_updates.join('\n')}</pre></details>`;
+                    }
+                    
+                    resultContent.innerHTML = content;
+                } else {
+                    result.classList.add('error');
+                    result.classList.remove('success');
+                    resultContent.innerHTML = `<h3>❌ 错误</h3><p>${data.error}</p>`;
+                }
+                
+            } catch (error) {
+                loading.classList.remove('show');
+                result.classList.add('show', 'error');
+                result.classList.remove('success');
+                resultContent.innerHTML = `<h3>❌ 网络错误</h3><p>${error.message}</p>`;
+            }
+        }
+        
+        // 显示所有用户
+        async function showAllUsers() {
+            const loading = document.getElementById('adminLoading');
+            const result = document.getElementById('adminResult');
+            const resultContent = document.getElementById('adminResultContent');
+            const loadingText = document.getElementById('adminLoadingText');
+            
+            loadingText.textContent = '正在获取用户列表...';
+            loading.classList.add('show');
+            result.classList.remove('show');
+            
+            try {
+                const response = await fetch('/api/users');
+                const data = await response.json();
+                
+                loading.classList.remove('show');
+                result.classList.add('show', 'success');
+                result.classList.remove('error');
+                
+                let content = `<h3>📋 所有用户 (共 ${data.users.length} 个)</h3>`;
+                
+                if (data.users.length > 0) {
+                    content += `
+                        <table class="stats-table">
+                            <thead>
+                                <tr>
+                                    <th>用户名</th>
+                                    <th>代码</th>
+                                    <th>用户ID</th>
+                                    <th>创建时间</th>
+                                    <th>更新时间</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    
+                    data.users.forEach(user => {
+                        content += `
+                            <tr>
+                                <td>${user.name}</td>
+                                <td>${user.code}</td>
+                                <td>${user.user_id}</td>
+                                <td>${new Date(user.created_at).toLocaleString()}</td>
+                                <td>${new Date(user.updated_at).toLocaleString()}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    content += '</tbody></table>';
+                } else {
+                    content += '<p>暂无用户数据</p>';
+                }
+                
+                resultContent.innerHTML = content;
+                
+            } catch (error) {
+                loading.classList.remove('show');
+                result.classList.add('show', 'error');
+                result.classList.remove('success');
+                resultContent.innerHTML = `<h3>❌ 网络错误</h3><p>${error.message}</p>`;
+            }
+        }
+        
+        // 搜索用户
+        async function searchUser() {
+            const userId = document.getElementById('searchUserInput').value.trim();
+            
+            if (!userId) {
+                alert('请输入用户ID或代码');
+                return;
+            }
+            
+            const result = document.getElementById('searchResult');
+            const resultContent = document.getElementById('searchResultContent');
+            
+            try {
+                const response = await fetch(`/api/user/${userId}/stats`);
+                const data = await response.json();
+                
+                result.classList.add('show');
+                
+                if (response.ok && data.user) {
+                    result.classList.add('success');
+                    result.classList.remove('error');
+                    
+                    const user = data.user;
+                    let content = `
+                        <h3>👤 用户信息</h3>
+                        <div class="user-info">
+                            <p><strong>用户名:</strong> ${user.name}</p>
+                            <p><strong>代码:</strong> ${user.code}</p>
+                            <p><strong>用户ID:</strong> ${user.user_id}</p>
+                            <p><strong>创建时间:</strong> ${new Date(user.created_at).toLocaleString()}</p>
+                            <p><strong>更新时间:</strong> ${new Date(user.updated_at).toLocaleString()}</p>
+                        </div>
+                    `;
+                    
+                    if (data.stats && data.stats.length > 0) {
+                        content += `
+                            <h3>📊 最近统计数据 (最近 10 条)</h3>
+                            <table class="stats-table">
+                                <thead>
+                                    <tr>
+                                        <th>日期</th>
+                                        <th>胜利</th>
+                                        <th>游戏</th>
+                                        <th>胜率</th>
+                                        <th>分数</th>
+                                        <th>变动</th>
+                                        <th>总胜利</th>
+                                        <th>总游戏</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                        `;
+                        
+                        data.stats.slice(0, 10).forEach(stat => {
+                            content += `
+                                <tr>
+                                    <td>${stat.record_date}</td>
+                                    <td>${stat.wins}</td>
+                                    <td>${stat.plays}</td>
+                                    <td>${(stat.win_rate * 100).toFixed(2)}%</td>
+                                    <td>${stat.rate}</td>
+                                    <td>${stat.rate_change > 0 ? '+' : ''}${stat.rate_change}</td>
+                                    <td>${stat.wins_total}</td>
+                                    <td>${stat.plays_total}</td>
+                                </tr>
+                            `;
+                        });
+                        
+                        content += '</tbody></table>';
+                    } else {
+                        content += '<p>暂无统计数据</p>';
+                    }
+                    
+                    resultContent.innerHTML = content;
+                } else {
+                    result.classList.add('error');
+                    result.classList.remove('success');
+                    resultContent.innerHTML = `<h3>❌ 用户未找到</h3><p>${data.error || '用户不存在'}</p>`;
+                }
+                
+            } catch (error) {
+                result.classList.add('show', 'error');
+                result.classList.remove('success');
+                resultContent.innerHTML = `<h3>❌ 网络错误</h3><p>${error.message}</p>`;
+            }
+        }
+        
+        // 回车键触发搜索
+        document.getElementById('userIdInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                fetchUserData();
+            }
+        });
+        
+        document.getElementById('searchUserInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchUser();
+            }
+        });
+    </script>
+</body>
+</html> 

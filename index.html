@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Mario Maker 2数据统计</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1><i class="fas fa-gamepad"></i> Super Mario Maker 2数据统计</h1>
+                    <p>追踪你的游戏表现，查看排名和数据分析</p>
+                </div>
+                <div class="header-right">
+                    <!-- Search Section moved to header -->
+                    <div class="search-container">
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="playerSearch" placeholder="输入玩家ID搜索...">
+                            <button id="searchBtn">搜索</button>
+                        </div>
+                        <div class="search-suggestions" id="searchSuggestions"></div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Podium Section - 左边排行榜，右边奖牌 -->
+        <section class="podium-section">
+            <div class="podium-main-layout">
+                <!-- 左侧排行榜 -->
+                <div class="podium-left-content">
+                    <div>
+                        <h2><i class="fas fa-trophy"></i> 排行榜</h2>
+                        <div class="ranking-tabs">
+                            <button class="tab-btn active" data-tab="winrate">胜率排名</button>
+                            <button class="tab-btn" data-tab="rating">分数排名</button>
+                        </div>
+                    </div>
+                    
+                    <div class="full-ranking">
+                        <div class="ranking-list" id="rankingList"></div>
+                    </div>
+                </div>
+                
+                <!-- 右侧颁奖台（奖牌） -->
+                <div class="podium-right-content">
+                    <div class="podium-container">
+                        <div class="podium">
+                            <div class="podium-place second">
+                                <div class="podium-player" id="second-place">
+                                    <div class="medal silver"><i class="fas fa-medal"></i></div>
+                                    <div class="player-info">
+                                        <div class="player-name">-</div>
+                                        <div class="player-stats">-</div>
+                                    </div>
+                                </div>
+                                <div class="podium-base silver-base">2</div>
+                            </div>
+                            <div class="podium-place first">
+                                <div class="podium-player" id="first-place">
+                                    <div class="medal gold"><i class="fas fa-crown"></i></div>
+                                    <div class="player-info">
+                                        <div class="player-name">-</div>
+                                        <div class="player-stats">-</div>
+                                    </div>
+                                </div>
+                                <div class="podium-base gold-base">1</div>
+                            </div>
+                            <div class="podium-place third">
+                                <div class="podium-player" id="third-place">
+                                    <div class="medal bronze"><i class="fas fa-medal"></i></div>
+                                    <div class="player-info">
+                                        <div class="player-name">-</div>
+                                        <div class="player-stats">-</div>
+                                    </div>
+                                </div>
+                                <div class="podium-base bronze-base">3</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Player Details Section -->
+        <section class="player-details" id="playerDetails" style="display: none;">
+            <h2><i class="fas fa-user"></i> 玩家详情</h2>
+            <div class="player-stats-container">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-trophy"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="totalWins">0</div>
+                        <div class="stat-label">总胜利数</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-gamepad"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="totalPlays">0</div>
+                        <div class="stat-label">总游戏数</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-percentage"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="overallWinRate">0%</div>
+                        <div class="stat-label">总胜率</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-star"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="currentRating">0</div>
+                        <div class="stat-label">当前分数</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section class="charts-section" id="chartsSection" style="display: none;">
+            <h2><i class="fas fa-chart-line"></i> 数据图表</h2>
+            <div class="chart-tabs">
+                <button class="chart-tab-btn active" data-chart="dailyStats">每日统计</button>
+                <button class="chart-tab-btn" data-chart="ratingTrend">分数趋势</button>
+                <button class="chart-tab-btn" data-chart="winRateTrend">胜率趋势</button>
+            </div>
+            <div class="chart-container">
+                <canvas id="mainChart"></canvas>
+            </div>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 

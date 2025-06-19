@@ -1,0 +1,140 @@
+name: Update Mario Maker 2 Data
+
+on:
+  schedule:
+    # 每天北京时间04:00运行 (UTC时间20:00)
+    - cron: '0 20 * * *'
+    # 每天北京时间05:00运行 (UTC时间21:00)  
+    - cron: '0 21 * * *'
+  push:
+    branches: [ main, add-website ]  # 支持在add-website分支触发
+  workflow_dispatch:
+    # 允许手动触发
+    inputs:
+      user_id:
+        description: '单个用户ID (可选，留空则更新所有用户)'
+        required: false
+        type: string
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        # 确保能提交更改
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Setup database (if needed)
+      run: |
+        # 如果数据库不存在，先从CSV迁移数据
+        if [ ! -f mario_stats.db ]; then
+          echo "Database not found, migrating from CSV..."
+          python3 everyday_db.py --migrate
+        fi
+    
+    - name: Update single user data (if specified)
+      if: ${{ github.event.inputs.user_id != '' }}
+      run: |
+        echo "Updating single user: ${{ github.event.inputs.user_id }}"
+        python3 everyday_db.py --user-id "${{ github.event.inputs.user_id }}"
+    
+    - name: Update all users data (scheduled or manual without user_id)
+      if: ${{ github.event.inputs.user_id == '' }}
+      run: |
+        echo "Updating all users..."
+        python3 everyday_db.py --batch
+    
+    - name: Backup database to CSV (for compatibility)
+      run: |
+        # 导出数据库数据到CSV格式作为备份
+        python3 -c "
+        from database import MarioDatabase
+        import csv
+        import os
+        
+        db = MarioDatabase()
+        users = db.get_all_users()
+        
+        # 确保data目录存在
+        os.makedirs('data', exist_ok=True)
+        
+        for user in users:
+            stats = db.get_user_stats(user['code'])
+            if stats:
+                csv_path = f'data/{user[\"code\"]}.csv'
+                with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
+                    fieldnames = ['wins', 'plays', 'win_rate', 'rate', 'rate_change', 'wins_total', 'plays_total', 'time']
+                    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                    writer.writeheader()
+                    
+                    for stat in reversed(stats):  # 按时间正序
+                        writer.writerow({
+                            'wins': stat['wins'],
+                            'plays': stat['plays'],
+                            'win_rate': stat['win_rate'],
+                            'rate': stat['rate'],
+                            'rate_change': stat['rate_change'],
+                            'wins_total': stat['wins_total'],
+                            'plays_total': stat['plays_total'],
+                            'time': stat['record_time']
+                        })
+        print('CSV backup completed')
+        "
+    
+    - name: Commit and push changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        # 添加数据库文件和CSV备份
+        git add mario_stats.db data/*.csv
+        
+        # 检查是否有更改
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Auto update Mario Maker 2 data - $(date '+%Y-%m-%d %H:%M:%S')"
+          git push
+        fi
+    
+    - name: Create data summary
+      run: |
+        echo "## 数据更新摘要" > data_summary.md
+        echo "更新时间: $(date '+%Y-%m-%d %H:%M:%S')" >> data_summary.md
+        echo "" >> data_summary.md
+        
+        python3 -c "
+        from database import MarioDatabase
+        
+        db = MarioDatabase()
+        users = db.get_all_users()
+        latest_stats = db.get_latest_stats_for_all_users()
+        
+        print(f'总用户数: {len(users)}')
+        print(f'有数据的用户: {len(latest_stats)}')
+        print('')
+        print('最新数据:')
+        for stat in latest_stats:
+            print(f'- {stat[\"name\"]}: {stat[\"rate\"]}分 (胜率 {stat[\"win_rate\"]:.2f}, 总局数 {stat[\"plays_total\"]})')
+        " >> data_summary.md
+        
+        cat data_summary.md
+    
+    - name: Upload summary as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: data-summary
+        path: data_summary.md 
