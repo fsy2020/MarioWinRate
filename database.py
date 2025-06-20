@@ -297,64 +297,6 @@ class MarioDatabase:
             record_time=current_time
         )
 
-    def load_player_names_from_cron_log(self, cron_log_path: str = "data/cron.log") -> bool:
-        """从cron.log文件加载玩家名字和ID对应关系并更新数据库"""
-        try:
-            if not os.path.exists(cron_log_path):
-                print(f"Cron log file {cron_log_path} not found")
-                return False
-                
-            with open(cron_log_path, 'r', encoding='utf-8') as file:
-                lines = file.readlines()
-            
-            with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.cursor()
-                
-                for line in lines:
-                    line = line.strip()
-                    if not line or line.replace('.', '').isdigit():  # 跳过空行和纯数字行
-                        continue
-                    
-                    # 解析格式: "玩家名字 玩家ID"
-                    parts = line.rsplit(' ', 1)  # 从右边分割，只分割一次
-                    if len(parts) == 2:
-                        name, player_id = parts
-                        
-                        # 更新或插入用户信息
-                        cursor.execute("""
-                            INSERT OR REPLACE INTO users (user_id, code, name, updated_at)
-                            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-                        """, (player_id, player_id, name))
-                
-                conn.commit()
-                print(f"Successfully loaded player names from {cron_log_path}")
-                return True
-                
-        except Exception as e:
-            print(f"Error loading player names from cron log: {e}")
-            return False
-
-    def get_player_name_by_code(self, code: str) -> str:
-        """根据玩家ID获取玩家名字，如果没有找到则返回ID本身"""
-        user = self.get_user_by_code(code)
-        return user['name'] if user else code
-
-    def search_players(self, query: str) -> List[Dict]:
-        """根据名字或ID搜索玩家"""
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT * FROM users 
-                WHERE LOWER(name) LIKE LOWER(?) OR LOWER(code) LIKE LOWER(?)
-                ORDER BY name
-            """, (f'%{query}%', f'%{query}%'))
-            rows = cursor.fetchall()
-            
-            return [{
-                'id': row[0], 'user_id': row[1], 'code': row[2], 
-                'name': row[3], 'created_at': row[4], 'updated_at': row[5]
-            } for row in rows]
-
 
 class MarioAPI:
     """兼容原有API的类"""
