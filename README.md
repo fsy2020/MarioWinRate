@@ -1,6 +1,6 @@
-# Mario Maker 2 数据统计网页
+# Super Mario Maker 2 数据统计网页
 
-一个现代化的网页应用，用于展示Mario Maker 2玩家的游戏数据统计、排名和趋势分析。
+一个现代化的网页应用，用于展示Super Mario Maker 2玩家的游戏数据统计、排名和趋势分析。
 
 ## 功能特性
 
@@ -48,22 +48,6 @@ python3 server.py
 
 打开浏览器访问: `http://localhost:5000`
 
-## 项目结构
-
-```
-MarioWinRate/
-├── index.html          # 主页面
-├── styles.css          # 样式文件
-├── script.js           # JavaScript逻辑
-├── server.py           # Flask服务器
-├── start.sh            # 启动脚本
-├── requirements.txt    # Python依赖
-├── data/              # CSV数据文件目录
-│   ├── LDMLC6RLG.csv
-│   ├── 08VW66RLF.csv
-│   └── ...
-└── README.md          # 项目说明
-```
 
 ## 数据格式
 
@@ -162,15 +146,15 @@ user_ids = ["Y9P7BN4JF", "SQW0796SF", "GDH8R4V4G", ...]
 使用tgr网站api自动获取胜率变化，并且做成CSV以便做成图表
 
 ## 效果图片
-![效果图片](crontab.png)
-![每日数据整合图](Panzi.png)
+![效果图片](images/crontab.png)
+![每日数据整合图](images/Panzi.png)
 
 ## 使用说明
 先下载包requirements.txt
 然后修改代码中的user_id为自己想要获取的，如果想要添加多个用户，可以添加到user_ids的list数组中，然后再everyday.py目录下，每日运行。
 
 ## 获取自己的user_id
-![用户ID获取](user_id.png)
+![用户ID获取](images/user_id.png)
 
 ## 自动执行
 1. 设置好crontab
