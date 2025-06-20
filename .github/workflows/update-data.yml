@@ -6,8 +6,8 @@ on:
     - cron: '0 20 * * *'
     # 每天北京时间05:00运行 (UTC时间21:00)  
     - cron: '0 21 * * *'
-  push:
-    branches: [ main, add-website ]  # 支持在add-website分支触发
+  pull_request:
+    branches: [ master ]  # 当有PR提交到master分支时触发
   workflow_dispatch:
     # 允许手动触发
     inputs:
