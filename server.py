@@ -11,6 +11,9 @@ CORS(app)
 # 初始化数据库
 db = MarioDatabase()
 
+# 在应用启动时加载cron.log中的玩家名字
+db.load_player_names_from_cron_log()
+
 # 提供静态文件
 @app.route('/')
 def index():
@@ -175,6 +178,41 @@ def update_all_users():
             'successful_updates': successful_updates,
             'failed_updates': failed_updates
         })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# 新API：搜索玩家
+@app.route('/api/search-players')
+def search_players():
+    try:
+        query = request.args.get('q', '').strip()
+        if not query:
+            return jsonify({'players': []})
+        
+        players = db.search_players(query)
+        return jsonify({'players': players})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# 新API：重新加载cron.log文件
+@app.route('/api/reload-player-names', methods=['POST'])
+def reload_player_names():
+    try:
+        success = db.load_player_names_from_cron_log()
+        if success:
+            return jsonify({'success': True, 'message': 'Player names reloaded successfully'})
+        else:
+            return jsonify({'error': 'Failed to reload player names'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# 新API：获取所有玩家名字映射
+@app.route('/api/player-names')
+def get_player_names():
+    try:
+        users = db.get_all_users()
+        name_mapping = {user['code']: user['name'] for user in users}
+        return jsonify({'nameMapping': name_mapping})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
