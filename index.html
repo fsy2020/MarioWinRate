@@ -17,17 +17,17 @@
             <div class="header-content">
                 <div class="header-left">
                     <h1><i class="fas fa-gamepad"></i> Super Mario Maker 2数据统计</h1>
-                    <p>追踪你的游戏表现，查看排名和数据分析</p>
+                    <p>追踪你的多人对战游戏表现，查看排名和数据分析</p>
                 </div>
                 <div class="header-right">
                     <!-- Search Section moved to header -->
                     <div class="search-container">
                         <div class="search-box">
                             <i class="fas fa-search"></i>
-                            <input type="text" id="playerSearch" placeholder="输入玩家ID搜索...">
+                            <input type="text" id="playerSearch" placeholder="输入玩家名字或ID搜索...">
                             <button id="searchBtn">搜索</button>
                         </div>
-                        <div class="search-suggestions" id="searchSuggestions"></div>
+                        <div class="search-suggestlions" id="searchSuggestions"></div>
                     </div>
                 </div>
             </div>
@@ -94,7 +94,22 @@
         <!-- Player Details Section -->
         <section class="player-details" id="playerDetails" style="display: none;">
             <h2><i class="fas fa-user"></i> 玩家详情</h2>
+            <div class="player-name-display" id="playerNameDisplay"></div>
             <div class="player-stats-container">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-star"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="currentRating">0</div>
+                        <div class="stat-label">当前分数</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-percentage"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="overallWinRate">0%</div>
+                        <div class="stat-label">总胜率</div>
+                    </div>
+                </div>
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-trophy"></i></div>
                     <div class="stat-info">
@@ -107,20 +122,6 @@
                     <div class="stat-info">
                         <div class="stat-value" id="totalPlays">0</div>
                         <div class="stat-label">总游戏数</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-percentage"></i></div>
-                    <div class="stat-info">
-                        <div class="stat-value" id="overallWinRate">0%</div>
-                        <div class="stat-label">总胜率</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-star"></i></div>
-                    <div class="stat-info">
-                        <div class="stat-value" id="currentRating">0</div>
-                        <div class="stat-label">当前分数</div>
                     </div>
                 </div>
             </div>
