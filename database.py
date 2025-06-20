@@ -301,8 +301,8 @@ class MarioDatabase:
         """从cron.log文件加载玩家名字和ID对应关系并更新数据库"""
         try:
             if not os.path.exists(cron_log_path):
-                print(f"Cron log file {cron_log_path} not found")
-                return False
+                print(f"Cron log file {cron_log_path} not found, using fallback mapping")
+                return self.load_fallback_player_names()
                 
             with open(cron_log_path, 'r', encoding='utf-8') as file:
                 lines = file.readlines()
@@ -332,6 +332,49 @@ class MarioDatabase:
                 
         except Exception as e:
             print(f"Error loading player names from cron log: {e}")
+            print("Falling back to static mapping")
+            return self.load_fallback_player_names()
+
+    def load_fallback_player_names(self) -> bool:
+        """当无法读取cron.log文件时使用的后备玩家名字映射"""
+        fallback_mapping = {
+            'Y9P7BN4JF': 'Panzi°',
+            'SQW0796SF': 'yuan☆',
+            'GDH8R4V4G': 'Chenfeng!',
+            'D221SPHLF': 'BuBuLine',
+            'Q5MBL99QG': 'DY_XiaoJie',
+            '4QVF9V6RF': 'ΒOチ',
+            'D049HCB8G': 'Sister♪',
+            '1VVRCXQPF': 'ただのpiyo',
+            'D8CJ2W62H': 'Nxs Syo。',
+            'LDMLC6RLG': '∞マジシャンΚ∞',
+            '0JR5R5BJG': '【MC×】Selen',
+            '08VW66RLF': '⊂●Mr.クロス●⊃',
+            '0MMCG9V4G': 'Panzi\'',
+            '7CPDNC72G': 'CN★ΜPlayer',
+            '135CFSJTG': 'MPlayerAlt',
+            '66NT81CTF': 'buhuai008',
+            'XDL02BC6G': 'Yangcilang',
+            'BSHMC4PKF': 'yuan dian',
+            'S52QN7JXF': '†™†'
+        }
+        
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                for player_id, name in fallback_mapping.items():
+                    cursor.execute("""
+                        INSERT OR REPLACE INTO users (user_id, code, name, updated_at)
+                        VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                    """, (player_id, player_id, name))
+                
+                conn.commit()
+                print("Successfully loaded fallback player names")
+                return True
+                
+        except Exception as e:
+            print(f"Error loading fallback player names: {e}")
             return False
 
     def get_player_name_by_code(self, code: str) -> str:

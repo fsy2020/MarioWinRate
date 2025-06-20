@@ -105,10 +105,34 @@ async function loadPlayerNameMapping() {
         if (response.ok) {
             const data = await response.json();
             playerNameMapping = data.nameMapping || {};
+        } else {
+            throw new Error('API调用失败');
         }
     } catch (error) {
         console.error('加载玩家名字映射失败:', error);
-        playerNameMapping = {};
+        console.log('使用后备名字映射');
+        // 使用后备的静态名字映射
+        playerNameMapping = {
+            'Y9P7BN4JF': 'Panzi°',
+            'SQW0796SF': 'yuan☆',
+            'GDH8R4V4G': 'Chenfeng!',
+            'D221SPHLF': 'BuBuLine',
+            'Q5MBL99QG': 'DY_XiaoJie',
+            '4QVF9V6RF': 'ΒOチ',
+            'D049HCB8G': 'Sister♪',
+            '1VVRCXQPF': 'ただのpiyo',
+            'D8CJ2W62H': 'Nxs Syo。',
+            'LDMLC6RLG': '∞マジシャンΚ∞',
+            '0JR5R5BJG': '【MC×】Selen',
+            '08VW66RLF': '⊂●Mr.クロス●⊃',
+            '0MMCG9V4G': 'Panzi\'',
+            '7CPDNC72G': 'CN★ΜPlayer',
+            '135CFSJTG': 'MPlayerAlt',
+            '66NT81CTF': 'buhuai008',
+            'XDL02BC6G': 'Yangcilang',
+            'BSHMC4PKF': 'yuan dian',
+            'S52QN7JXF': '†™†'
+        };
     }
 }
 
