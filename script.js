@@ -1,38 +1,13 @@
 // 全局变量
 let playersData = {};
 let currentChart = null;
-let currentRankingType = 'winrate'; // 'rating' 或 'winrate'
-let playerNameMapping = {}; // 存储玩家ID到名字的映射
+let currentRankingType = 'winrate';
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
     loadPlayersData();
     initializeEventListeners();
-    
-    // 确保初始状态下没有布局容器
-    cleanupPlayerLayout();
 });
-
-// 清理玩家布局容器
-function cleanupPlayerLayout() {
-    const existingLayout = document.querySelector('.player-content-layout');
-    if (existingLayout) {
-        const playerDetails = document.getElementById('playerDetails');
-        const chartsSection = document.getElementById('chartsSection');
-        
-        // 将元素移回原来的位置
-        const container = document.querySelector('.container');
-        container.appendChild(playerDetails);
-        container.appendChild(chartsSection);
-        
-        // 移除布局容器
-        existingLayout.remove();
-        
-        // 隐藏元素
-        playerDetails.style.display = 'none';
-        chartsSection.style.display = 'none';
-    }
-}
 
 // 初始化事件监听器
 function initializeEventListeners() {
@@ -73,9 +48,6 @@ async function loadPlayersData() {
         // 显示加载动画
         showLoading();
         
-        // 首先加载玩家名字映射
-        await loadPlayerNameMapping();
-        
         // 获取所有CSV文件列表
         const csvFiles = await fetchCSVFilesList();
         
@@ -96,35 +68,6 @@ async function loadPlayersData() {
         console.error('加载数据失败:', error);
         hideLoading();
     }
-}
-
-// 加载玩家名字映射
-async function loadPlayerNameMapping() {
-    try {
-        const response = await fetch('/api/player-names');
-        if (response.ok) {
-            const data = await response.json();
-            playerNameMapping = data.nameMapping || {};
-        }
-    } catch (error) {
-        console.error('加载玩家名字映射失败:', error);
-        playerNameMapping = {};
-    }
-}
-
-// 获取玩家显示名称
-function getPlayerDisplayName(playerId) {
-    return playerNameMapping[playerId] || playerId;
-}
-
-// 获取玩家ID（用于搜索）
-function getPlayerIdByName(playerName) {
-    for (const [id, name] of Object.entries(playerNameMapping)) {
-        if (name.toLowerCase().includes(playerName.toLowerCase())) {
-            return id;
-        }
-    }
-    return playerName; // 如果没找到，假设输入的就是ID
 }
 
 // 获取CSV文件列表
@@ -186,7 +129,7 @@ function parseCSVData(csvText, playerId) {
     
     return {
         playerId: playerId,
-        playerName: getPlayerDisplayName(playerId), // 使用真实姓名
+        playerName: playerId, // 可以从API获取真实姓名
         data: data,
         stats: {
             totalWins: totalWins,
@@ -202,24 +145,19 @@ function handleSearchInput() {
     const query = document.getElementById('playerSearch').value.toLowerCase();
     const suggestions = document.getElementById('searchSuggestions');
     
-    if (query.length < 1) {
+    if (query.length < 2) {
         suggestions.style.display = 'none';
         return;
     }
     
-    // 搜索匹配的玩家（通过ID或名字）
-    const matchedPlayers = Object.keys(playersData).filter(playerId => {
-        const playerName = getPlayerDisplayName(playerId);
-        return playerId.toLowerCase().includes(query) || 
-               playerName.toLowerCase().includes(query);
-    });
+    const matchedPlayers = Object.keys(playersData).filter(playerId => 
+        playerId.toLowerCase().includes(query)
+    );
     
     if (matchedPlayers.length > 0) {
-        suggestions.innerHTML = matchedPlayers.map(playerId => {
-            const playerName = getPlayerDisplayName(playerId);
-            const displayText = playerName !== playerId ? `${playerName} (${playerId})` : playerId;
-            return `<div class="suggestion-item" onclick="selectPlayer('${playerId}')">${displayText}</div>`;
-        }).join('');
+        suggestions.innerHTML = matchedPlayers.map(playerId => 
+            `<div class="suggestion-item" onclick="selectPlayer('${playerId}')">${playerId}</div>`
+        ).join('');
         suggestions.style.display = 'block';
     } else {
         suggestions.style.display = 'none';
@@ -229,23 +167,9 @@ function handleSearchInput() {
 // 处理搜索
 function handleSearch() {
     const query = document.getElementById('playerSearch').value.trim();
-    if (!query) return;
-    
-    // 先尝试直接匹配ID
-    if (playersData[query]) {
+    if (query && playersData[query]) {
         selectPlayer(query);
-        return;
     }
-    
-    // 尝试通过名字查找
-    const matchedPlayerId = getPlayerIdByName(query);
-    if (playersData[matchedPlayerId]) {
-        selectPlayer(matchedPlayerId);
-        return;
-    }
-    
-    // 如果都没找到，显示提示
-    alert('未找到该玩家，请检查输入的名字或ID是否正确');
 }
 
 // 选择玩家
@@ -255,7 +179,7 @@ function selectPlayer(playerId) {
     
     // 隐藏搜索建议
     document.getElementById('searchSuggestions').style.display = 'none';
-    document.getElementById('playerSearch').value = getPlayerDisplayName(playerId);
+    document.getElementById('playerSearch').value = playerId;
     
     // 显示玩家详情
     showPlayerDetails(player);
@@ -268,29 +192,12 @@ function selectPlayer(playerId) {
 // 显示玩家详情
 function showPlayerDetails(player) {
     const playerDetails = document.getElementById('playerDetails');
-    const playerNameDisplay = document.getElementById('playerNameDisplay');
-    const chartsSection = document.getElementById('chartsSection');
     const stats = player.stats;
-    
-    // 显示玩家名字
-    playerNameDisplay.textContent = getPlayerDisplayName(player.playerId);
     
     document.getElementById('totalWins').textContent = stats.totalWins.toLocaleString();
     document.getElementById('totalPlays').textContent = stats.totalPlays.toLocaleString();
     document.getElementById('overallWinRate').textContent = stats.overallWinRate + '%';
     document.getElementById('currentRating').textContent = stats.currentRating.toLocaleString();
-    
-    // 创建组合布局容器
-    if (!document.querySelector('.player-content-layout')) {
-        const layoutContainer = document.createElement('div');
-        layoutContainer.className = 'player-content-layout';
-        
-        // 将玩家详情和图表放入布局容器
-        const container = document.querySelector('.container');
-        container.appendChild(layoutContainer);
-        layoutContainer.appendChild(playerDetails);
-        layoutContainer.appendChild(chartsSection);
-    }
     
     playerDetails.style.display = 'block';
 }
@@ -354,7 +261,7 @@ function updatePodium(sortedPlayers) {
             const nameElement = element.querySelector('.player-name');
             const statsElement = element.querySelector('.player-stats');
             
-            nameElement.textContent = getPlayerDisplayName(player.playerId);
+            nameElement.textContent = player.playerId;
             
             if (currentRankingType === 'winrate') {
                 statsElement.textContent = `胜率: ${player.stats.overallWinRate}%`;
@@ -380,13 +287,12 @@ function updateFullRanking(sortedPlayers) {
             : player.stats.currentRating.toLocaleString();
         
         const statLabel = currentRankingType === 'winrate' ? '胜率' : '分数';
-        const playerDisplayName = getPlayerDisplayName(player.playerId);
         
         return `
             <div class="ranking-item" onclick="selectPlayer('${player.playerId}')">
                 <div class="rank-number">${index + 1}</div>
                 <div class="rank-info">
-                    <div class="rank-name">${playerDisplayName}</div>
+                    <div class="rank-name">${player.playerId}</div>
                     <div class="rank-stats">
                         ${statLabel}: ${statValue} | 
                         胜利: ${player.stats.totalWins.toLocaleString()} | 
@@ -411,29 +317,21 @@ function switchChartTab(chartType) {
     });
     
     // 获取当前选中的玩家
-    const searchValue = document.getElementById('playerSearch').value.trim();
-    let selectedPlayer = null;
+    const selectedPlayerId = document.getElementById('playerSearch').value;
+    const player = playersData[selectedPlayerId];
     
-    // 先尝试通过名字查找玩家
-    for (const [playerId, player] of Object.entries(playersData)) {
-        if (getPlayerDisplayName(playerId) === searchValue || playerId === searchValue) {
-            selectedPlayer = player;
-            break;
-        }
-    }
-    
-    if (!selectedPlayer) return;
+    if (!player) return;
     
     // 根据图表类型绘制相应图表
     switch (chartType) {
         case 'dailyStats':
-            drawDailyStatsChart(selectedPlayer);
+            drawDailyStatsChart(player);
             break;
         case 'ratingTrend':
-            drawRatingTrendChart(selectedPlayer);
+            drawRatingTrendChart(player);
             break;
         case 'winRateTrend':
-            drawWinRateTrendChart(selectedPlayer);
+            drawWinRateTrendChart(player);
             break;
     }
 }
