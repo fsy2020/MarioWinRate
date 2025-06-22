@@ -3,9 +3,9 @@ name: Update Mario Maker 2 Data
 on:
   schedule:
     # 每天北京时间04:00运行 (UTC时间20:00)
-    - cron: '0 20 * * *'
+    - cron: '0 4 * * *'
     # 每天北京时间05:00运行 (UTC时间21:00)  
-    - cron: '0 21 * * *'
+    - cron: '0 5 * * *'
   pull_request:
     branches: [ master ]  # 当有PR提交到master分支时触发
   workflow_dispatch:
