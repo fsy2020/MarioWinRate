@@ -2,7 +2,7 @@ name: Deploy to Vercel
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, local-env ]
   pull_request:
     branches: [ master ]
   workflow_dispatch:
@@ -25,18 +25,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
-    - name: Setup database (if needed)
-      run: |
-        # 如果数据库不存在，先从CSV迁移数据
-        if [ ! -f mario_stats.db ]; then
-          echo "Database not found, migrating from CSV..."
-          python3 everyday_db.py --migrate
-        fi
     
     - name: Deploy to Vercel
       uses: amondnet/vercel-action@v25
-      with:
-        vercel-token: ${{ secrets.VERCEL_TOKEN }}
-        vercel-org-id: ${{ secrets.ORG_ID }}
-        vercel-project-id: ${{ secrets.PROJECT_ID }}
-        working-directory: ./ 
+
