@@ -10,6 +10,7 @@ body {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
     color: #333;
+    font-size: 14px;
 }
 
 .container {
@@ -20,33 +21,46 @@ body {
 
 /* Header Styles */
 .header {
-    margin-bottom: 40px;
-    padding: 40px 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 3rem 0;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M0,0 Q50,25 100,0 L100,100 L0,100 Z" fill="rgba(255,255,255,0.05)"/></svg>');
+    background-size: cover;
 }
 
 .header-content {
+    position: relative;
+    z-index: 1;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 40px;
-}
-
-.header-left {
-    text-align: left;
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 0 2rem;
 }
 
 .header-left h1 {
-    font-size: 3rem;
-    font-weight: 700;
-    color: white;
+    font-size: 2.2rem;
+    margin-bottom: 0.5rem;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-    margin-bottom: 10px;
 }
 
 .header-left p {
-    font-size: 1.2rem;
-    color: rgba(255,255,255,0.9);
-    font-weight: 300;
+    font-size: 1rem;
+    opacity: 0.9;
+    margin: 0;
 }
 
 .header-left i {
@@ -55,10 +69,10 @@ body {
 }
 
 .header-right {
-    flex-shrink: 0;
     display: flex;
-    align-items: center;
-    gap: 20px;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
 }
 
 /* Admin Button */
@@ -70,13 +84,13 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 12px 20px;
+    padding: 10px 16px;
     background: rgba(255, 255, 255, 0.1);
     color: white;
     text-decoration: none;
     border-radius: 25px;
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
     transition: all 0.3s ease;
@@ -89,96 +103,138 @@ body {
 }
 
 .admin-btn i {
-    font-size: 1rem;
+    font-size: 0.9rem;
 }
 
-/* Search in Header */
-.header-right .search-container {
+/* Language Switcher */
+.language-switcher {
     position: relative;
-    width: 400px;
+    display: inline-block;
+    margin-top: -10px;
 }
 
-.search-box {
+.language-btn {
     display: flex;
     align-items: center;
-    background: white;
-    border-radius: 50px;
-    padding: 15px 25px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    gap: 6px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 25px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    min-width: 90px;
+    justify-content: space-between;
+}
+
+.language-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.language-btn i.fa-globe {
+    font-size: 0.9rem;
+}
+
+.language-btn i.fa-chevron-down {
+    font-size: 0.7rem;
     transition: transform 0.3s ease;
 }
 
-.search-box:hover {
-    transform: translateY(-2px);
+.language-btn.active i.fa-chevron-down {
+    transform: rotate(180deg);
 }
 
-.search-box i {
-    color: #667eea;
-    margin-right: 15px;
-    font-size: 1.2rem;
-}
-
-.search-box input {
-    flex: 1;
-    border: none;
-    outline: none;
-    font-size: 1.1rem;
-    padding: 5px 0;
-}
-
-.search-box button {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 25px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.search-box button:hover {
-    transform: scale(1.05);
-    box-shadow: 0 5px 15px rgba(102,126,234,0.4);
-}
-
-.search-suggestions {
+.language-dropdown {
     position: absolute;
-    top: 100%;
-    left: 0;
+    top: calc(100% + 8px);
     right: 0;
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    max-height: 300px;
-    overflow-y: auto;
+    min-width: 90px;
+    width: 90px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(15px);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
     z-index: 1000;
-    margin-top: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.suggestion-item {
-    padding: 15px 25px;
+.language-dropdown.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.language-option {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 8px;
+    color: white;
     cursor: pointer;
-    border-bottom: 1px solid #f0f0f0;
-    transition: background 0.3s ease;
+    transition: all 0.3s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    font-weight: 600;
+    font-size: 0.7rem;
+    width: 100%;
+    justify-content: center;
+    border-radius: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.suggestion-item:hover {
-    background: #f8f9ff;
+.language-option:first-child {
+    border-radius: 12px 12px 0 0;
 }
 
-.suggestion-item:last-child {
+.language-option:last-child {
     border-bottom: none;
+    border-radius: 0 0 12px 12px;
+}
+
+.language-option:only-child {
+    border-radius: 12px;
+}
+
+.language-option:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+.language-option .flag {
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.language-option span:last-child {
+    font-weight: 600;
+    font-size: 0.7rem;
+    flex-shrink: 0;
 }
 
 /* Podium Section - 左边奖牌，右边排行榜 */
 .podium-section {
     background: white;
     border-radius: 20px;
-    padding: 40px;
-    margin-bottom: 40px;
+    padding: 30px;
+    margin-bottom: 30px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.1);
-    min-height: 600px;
+    min-height: 500px;
 }
 
 /* 主要布局容器 */
@@ -211,7 +267,7 @@ body {
 }
 
 .podium-section h2 {
-    font-size: 2.5rem;
+    font-size: 2rem;
     color: #333;
     margin-bottom: 20px;
 }
@@ -229,13 +285,14 @@ body {
 }
 
 .tab-btn {
-    padding: 12px 25px;
+    padding: 10px 20px;
     border: none;
     border-radius: 25px;
     background: #f0f0f0;
     color: #666;
     cursor: pointer;
     font-weight: 600;
+    font-size: 0.9rem;
     transition: all 0.3s ease;
 }
 
@@ -289,28 +346,68 @@ body {
 }
 
 .rank-number {
-    font-size: 1.5rem;
     font-weight: 700;
     color: #667eea;
-    width: 50px;
-    text-align: center;
-    transition: color 0.3s ease;
+    font-size: 16px;
 }
 
-.rank-info {
-    flex: 1;
-    margin-left: 20px;
+/* 特殊排名样式 */
+.rank-gold {
+    color: #FFD700 !important;
+    font-weight: 900 !important;
+    text-shadow: 1px 1px 2px rgba(255, 215, 0, 0.3);
+    position: relative;
 }
 
-.rank-name {
-    font-size: 1.1rem;
+.rank-gold::before {
+    content: '👑 ';
+    font-size: 14px;
+}
+
+.rank-silver {
+    color: #C0C0C0 !important;
+    font-weight: 800 !important;
+    text-shadow: 1px 1px 2px rgba(192, 192, 192, 0.3);
+}
+
+.rank-silver::before {
+    content: '🥈 ';
+    font-size: 14px;
+}
+
+.rank-bronze {
+    color: #CD7F32 !important;
+    font-weight: 800 !important;
+    text-shadow: 1px 1px 2px rgba(205, 127, 50, 0.3);
+}
+
+.rank-bronze::before {
+    content: '🥉 ';
+    font-size: 14px;
+}
+
+.rank-top10 {
+    color: #FF6B6B !important;
+    font-weight: 700 !important;
+    background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 107, 107, 0.2));
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.player-name {
     font-weight: 600;
     color: #333;
-    transition: color 0.3s ease;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.player-name:hover {
+    color: #667eea;
+    text-decoration: underline;
 }
 
 .rank-stats {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     color: #666;
     margin-top: 5px;
     transition: color 0.3s ease;
@@ -364,7 +461,7 @@ body {
 }
 
 .medal {
-    font-size: 2.5rem;
+    font-size: 2rem;
     margin-bottom: 10px;
     animation: bounce 2s infinite;
 }
@@ -389,7 +486,7 @@ body {
 }
 
 .player-name {
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 600;
     color: #333;
     margin-bottom: 5px;
@@ -397,19 +494,19 @@ body {
 }
 
 .player-stats {
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     color: #666;
     line-height: 1.4;
 }
 
 .podium-base {
-    height: 60px;
-    width: 100px;
+    height: 55px;
+    width: 95px;
     border-radius: 10px 10px 0 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     font-weight: 700;
     color: white;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
@@ -436,7 +533,7 @@ body {
 
 .gold-base {
     background: linear-gradient(135deg, #FFD700, #FFA500);
-    height: 80px;
+    height: 70px;
 }
 
 .silver-base {
@@ -462,7 +559,7 @@ body {
 }
 
 .player-details h2 {
-    font-size: 2rem;
+    font-size: 1.7rem;
     color: #333;
     margin-bottom: 15px;
     text-align: center;
@@ -475,7 +572,7 @@ body {
 }
 
 .player-name-display {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 500;
     color: #667eea;
     margin-bottom: 1.5rem;
@@ -494,10 +591,10 @@ body {
 .stat-card {
     background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
     border-radius: 15px;
-    padding: 20px;
+    padding: 16px;
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 12px;
     transition: all 0.3s ease;
     border: 2px solid #e8f0ff;
 }
@@ -509,18 +606,18 @@ body {
 }
 
 .stat-icon {
-    font-size: 2rem;
+    font-size: 1.7rem;
     color: #667eea;
 }
 
 .stat-value {
-    font-size: 2rem;
-    font-weight: 700;
+    font-size: 1.7rem;
+    font-weight: 600;
     color: #333;
 }
 
 .stat-label {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     color: #666;
     margin-top: 5px;
 }
@@ -539,7 +636,7 @@ body {
 }
 
 .charts-section h2 {
-    font-size: 2rem;
+    font-size: 1.7rem;
     color: #333;
     margin-bottom: 20px;
     text-align: center;
@@ -561,13 +658,14 @@ body {
 }
 
 .chart-tab-btn {
-    padding: 12px 25px;
+    padding: 10px 20px;
     border: none;
     border-radius: 25px;
     background: #f0f0f0;
     color: #666;
     cursor: pointer;
     font-weight: 600;
+    font-size: 0.9rem;
     transition: all 0.3s ease;
 }
 
@@ -648,25 +746,53 @@ body {
     .header-left {
         text-align: center;
     }
-    
-    .header-right .search-container {
-        width: 100%;
-        max-width: 500px;
-    }
 }
 
 @media (max-width: 768px) {
     .container {
-        padding: 15px;
+        padding: 10px;
     }
 
     .header-left h1 {
-        font-size: 2rem;
+        font-size: 1.7rem;
+    }
+    
+    .header-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+    
+    .header-left {
+        order: 1;
+    }
+    
+    .header-right {
+        order: 2;
+        align-items: center;
+    }
+    
+    .language-switcher {
+        width: 100%;
+        max-width: 200px;
+        margin-top: 0;
+    }
+    
+    .language-btn {
+        width: 100%;
+        justify-content: center;
+        gap: 12px;
+    }
+    
+    .language-dropdown {
+        left: 0;
+        right: 0;
+        min-width: auto;
     }
 
     .podium-section {
         padding: 20px;
-        min-height: auto;
+        margin-bottom: 20px;
     }
 
     .podium-main-layout {
@@ -675,27 +801,27 @@ body {
     }
 
     .podium {
-        gap: 8px;
-        flex-wrap: wrap;
-        justify-content: center;
+        transform: scale(0.8);
     }
 
     .podium-place {
-        margin-bottom: 20px;
+        width: 80px;
+        height: 80px;
     }
 
     .podium-place.first,
-    .podium-place.second,
+    .podium-place.second, 
     .podium-place.third {
-        order: unset;
+        width: 80px;
+        height: 80px;
     }
 
     .player-stats-container {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
     }
 
     .chart-tabs {
-        justify-content: flex-start;
+        flex-wrap: wrap;
     }
 
     .chart-container {
@@ -703,11 +829,7 @@ body {
     }
 
     .ranking-tabs {
-        justify-content: flex-start;
-    }
-    
-    .search-box {
-        padding: 12px 20px;
+        justify-content: center;
     }
 }
 
@@ -772,5 +894,157 @@ body {
     
     .charts-section {
         margin-bottom: 20px;
+    }
+}
+
+/* 控制栏网格布局调整 */
+.controls-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+    gap: 15px;
+    align-items: center;
+}
+
+@media (max-width: 1200px) {
+    .controls-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+}
+
+/* 改进的表格样式 */
+.players-table th.sortable:hover {
+    background: linear-gradient(135deg, #d8e8ff 0%, #c8d8ff 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.players-table tr:nth-child(odd) {
+    background-color: #f8f9ff;
+}
+
+.players-table tr:hover {
+    background: linear-gradient(135deg, #e8f0ff 0%, #f0f5ff 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+    transition: all 0.2s ease;
+}
+
+/* 排名过滤器特殊样式 */
+#rankFilterSelect {
+    border: 2px solid #e8f0ff;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
+    font-weight: 600;
+}
+
+#rankFilterSelect:focus {
+    border-color: #FFD700;
+    box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2);
+}
+
+.win-rate {
+    color: #28a745;
+}
+
+/* 排名统计样式 */
+.ranking-stats-section {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.distribution-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.distribution-card {
+    background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
+    border-radius: 10px;
+    padding: 20px;
+    border: 1px solid #e8f0ff;
+}
+
+.distribution-card h3 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.distribution-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.distribution-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+}
+
+.bar-label {
+    min-width: 80px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+}
+
+.bar-visual {
+    flex: 1;
+    height: 20px;
+    background: #f0f0f0;
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.8s ease;
+    position: relative;
+}
+
+.bar-rating-5000 { background: linear-gradient(90deg, #FFD700, #FFA500); }
+.bar-rating-4000 { background: linear-gradient(90deg, #C0C0C0, #A9A9A9); }
+.bar-rating-3000 { background: linear-gradient(90deg, #CD7F32, #D2691E); }
+.bar-rating-2000 { background: linear-gradient(90deg, #667eea, #764ba2); }
+.bar-rating-under { background: linear-gradient(90deg, #ff6b6b, #ee5a52); }
+
+.bar-winrate-80 { background: linear-gradient(90deg, #28a745, #20c997); }
+.bar-winrate-60 { background: linear-gradient(90deg, #17a2b8, #6f42c1); }
+.bar-winrate-40 { background: linear-gradient(90deg, #ffc107, #fd7e14); }
+.bar-winrate-20 { background: linear-gradient(90deg, #dc3545, #e83e8c); }
+.bar-winrate-under { background: linear-gradient(90deg, #6c757d, #495057); }
+
+.bar-count {
+    min-width: 40px;
+    text-align: right;
+    font-size: 12px;
+    font-weight: 700;
+    color: #333;
+}
+
+@media (max-width: 768px) {
+    .distribution-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     }
 } 
