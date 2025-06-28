@@ -25,7 +25,4 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
-    
-    - name: Deploy to Vercel
-      uses: amondnet/vercel-action@v25
 
