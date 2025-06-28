@@ -4,16 +4,17 @@ import os
 import json
 import csv
 import sqlite3
-from database import MarioDatabase
+from database_adapter import DatabaseAdapter
 
 app = Flask(__name__)
 CORS(app)
 
-# 初始化数据库
-db = MarioDatabase()
+# 初始化数据库适配器
+db = DatabaseAdapter()
 
-# 在应用启动时加载cron.log中的玩家名字
-db.load_player_names_from_cron_log()
+# 在应用启动时加载cron.log中的玩家名字（仅对本地数据库有效）
+if not db.is_s3:
+    db.load_player_names_from_cron_log()
 
 # 提供静态文件
 @app.route('/')

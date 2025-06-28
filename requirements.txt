@@ -1,4 +1,6 @@
 Flask==2.3.3
 Flask-CORS==4.0.0
 requests
-datasets 
+datasets
+boto3==1.34.0
+botocore==1.34.0
