@@ -615,36 +615,9 @@ def read_csv_data(player_id):
         print(f"Error reading CSV for {player_id}: {e}")
     return []
 
-# 添加调试API
-@app.route('/api/debug/s3-status')
-def debug_s3_status():
-    try:
-        debug_info = {
-            'is_s3': db.is_s3,
-            'env_vars_present': {
-                'AWS_ACCESS_KEY_ID': bool(os.environ.get('AWS_ACCESS_KEY_ID')),
-                'AWS_SECRET_ACCESS_KEY': bool(os.environ.get('AWS_SECRET_ACCESS_KEY')),
-                'S3_BUCKET_NAME': bool(os.environ.get('S3_BUCKET_NAME')),
-                'S3_DB_KEY': bool(os.environ.get('S3_DB_KEY')),
-                'AWS_REGION': os.environ.get('AWS_REGION', 'us-east-1')
-            }
-        }
-        
-        if db.is_s3:
-            # 测试S3连接
-            try:
-                tables = db.db.get_table_names()
-                debug_info['s3_connection'] = 'success'
-                debug_info['tables'] = tables
-                debug_info['local_db_path'] = db.db.local_db_path
-                debug_info['db_exists'] = os.path.exists(db.db._get_temp_db_path()) if hasattr(db.db, '_get_temp_db_path') else 'unknown'
-            except Exception as e:
-                debug_info['s3_connection'] = 'failed'
-                debug_info['s3_error'] = str(e)
-        
-        return jsonify(debug_info)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
+# 为Vercel导出应用对象
+# 在Vercel环境下，这个app对象会被自动使用
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=8000) 
+    # 本地开发环境下运行
+    app.run(debug=True, host='0.0.0.0', port=8000)
+# Vercel会自动使用上面定义的app对象 
