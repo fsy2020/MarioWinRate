@@ -232,91 +232,169 @@ def get_player_stats_snapshot():
         # 限制每页最大数量，防止过度请求
         per_page = min(per_page, 200)
         
-        # 连接到mario_filtered.db
-        conn = sqlite3.connect('mario_filtered.db')
-        cursor = conn.cursor()
-        
-        # 构建基础查询 - 添加胜率计算
-        base_query = """
-            SELECT p.name, pss.pid, pss.versus_rating, pss.versus_won, pss.versus_plays, pss.stat_date,
-                   CASE WHEN pss.versus_plays > 0 THEN (pss.versus_won * 100.0 / pss.versus_plays) ELSE 0 END as win_rate
-            FROM player p 
-            JOIN player_stats_snapshot pss ON p.pid = pss.pid
-        """
-        
-        # 添加搜索条件
-        where_conditions = []
-        params = []
-        
-        # 获取最新日期的数据
-        cursor.execute("SELECT MAX(stat_date) FROM player_stats_snapshot")
-        latest_date = cursor.fetchone()[0]
-        if latest_date:
-            where_conditions.append("pss.stat_date = ?")
-            params.append(latest_date)
-        
-        if search:
-            where_conditions.append("(p.name LIKE ? OR pss.pid LIKE ?)")
-            params.extend([f'%{search}%', f'%{search}%'])
-        
-        if where_conditions:
-            base_query += " WHERE " + " AND ".join(where_conditions)
-        
-        # 添加排序 - 增加胜率排序支持
-        valid_sort_columns = ['versus_rating', 'versus_won', 'versus_plays', 'name', 'win_rate']
-        if sort_by not in valid_sort_columns:
-            sort_by = 'versus_rating'
-        
-        if sort_order.lower() not in ['asc', 'desc']:
-            sort_order = 'desc'
-        
-        order_query = f" ORDER BY {sort_by} {sort_order.upper()}"
-        if sort_by != 'name':
-            order_query += ", p.name ASC"
-        
-        # 如果有排名过滤，需要先获取完整排序结果
-        if rank_filter:
-            # 获取完整排序的数据用于排名过滤
-            full_query = base_query + order_query
-            cursor.execute(full_query, params)
-            all_results = cursor.fetchall()
+        # 使用DatabaseAdapter处理数据库连接
+        if db.is_s3:
+            # S3数据库查询
+            base_query = """
+                SELECT p.name, pss.pid, pss.versus_rating, pss.versus_won, pss.versus_plays, pss.stat_date,
+                       CASE WHEN pss.versus_plays > 0 THEN (pss.versus_won * 100.0 / pss.versus_plays) ELSE 0 END as win_rate
+                FROM player p 
+                JOIN player_stats_snapshot pss ON p.pid = pss.pid
+            """
             
-            # 应用排名过滤
-            if rank_filter == 'top10':
-                filtered_results = all_results[:10]
-            elif rank_filter == 'top25':
-                filtered_results = all_results[:25]
-            elif rank_filter == 'top50':
-                filtered_results = all_results[:50]
-            elif rank_filter == 'top100':
-                filtered_results = all_results[:100]
-            else:
-                filtered_results = all_results
+            # 添加搜索条件
+            where_conditions = []
+            params = []
             
-            total_count = len(filtered_results)
+            # 获取最新日期的数据
+            latest_date_query = "SELECT MAX(stat_date) FROM player_stats_snapshot"
+            latest_date_result = db.db.execute_query(latest_date_query)
+            latest_date = latest_date_result[0][0] if latest_date_result and latest_date_result[0] else None
             
-            # 应用分页到过滤后的结果
-            offset = (page - 1) * per_page
-            results = filtered_results[offset:offset + per_page]
-        else:
-            # 获取总数
-            count_query = f"SELECT COUNT(*) FROM ({base_query}) as subquery"
-            cursor.execute(count_query, params)
-            total_count = cursor.fetchone()[0]
+            if latest_date:
+                where_conditions.append("pss.stat_date = ?")
+                params.append(latest_date)
             
-            # 添加分页
-            offset = (page - 1) * per_page
-            paginated_query = base_query + order_query + " LIMIT ? OFFSET ?"
-            params.extend([per_page, offset])
+            if search:
+                where_conditions.append("(p.name LIKE ? OR pss.pid LIKE ?)")
+                params.extend([f'%{search}%', f'%{search}%'])
+            
+            if where_conditions:
+                base_query += " WHERE " + " AND ".join(where_conditions)
+            
+            # 添加排序
+            valid_sort_columns = ['versus_rating', 'versus_won', 'versus_plays', 'name', 'win_rate']
+            if sort_by not in valid_sort_columns:
+                sort_by = 'versus_rating'
+            
+            if sort_order.lower() not in ['asc', 'desc']:
+                sort_order = 'desc'
+            
+            order_query = f" ORDER BY {sort_by} {sort_order.upper()}"
+            if sort_by != 'name':
+                order_query += ", p.name ASC"
             
             # 执行查询
-            cursor.execute(paginated_query, params)
-            results = cursor.fetchall()
+            full_query = base_query + order_query
+            all_results = db.db.execute_query(full_query, params)
+            
+            if not all_results:
+                all_results = []
+            
+            # 应用排名过滤
+            if rank_filter:
+                if rank_filter == 'top10':
+                    filtered_results = all_results[:10]
+                elif rank_filter == 'top25':
+                    filtered_results = all_results[:25]
+                elif rank_filter == 'top50':
+                    filtered_results = all_results[:50]
+                elif rank_filter == 'top100':
+                    filtered_results = all_results[:100]
+                else:
+                    filtered_results = all_results
+                
+                total_count = len(filtered_results)
+                
+                # 应用分页到过滤后的结果
+                offset = (page - 1) * per_page
+                results = filtered_results[offset:offset + per_page]
+            else:
+                total_count = len(all_results)
+                
+                # 应用分页
+                offset = (page - 1) * per_page
+                results = all_results[offset:offset + per_page]
+        else:
+            # 本地数据库连接
+            import sqlite3
+            conn = sqlite3.connect('mario_filtered.db')
+            cursor = conn.cursor()
+            
+            # 构建基础查询 - 添加胜率计算
+            base_query = """
+                SELECT p.name, pss.pid, pss.versus_rating, pss.versus_won, pss.versus_plays, pss.stat_date,
+                       CASE WHEN pss.versus_plays > 0 THEN (pss.versus_won * 100.0 / pss.versus_plays) ELSE 0 END as win_rate
+                FROM player p 
+                JOIN player_stats_snapshot pss ON p.pid = pss.pid
+            """
+            
+            # 添加搜索条件
+            where_conditions = []
+            params = []
+            
+            # 获取最新日期的数据
+            cursor.execute("SELECT MAX(stat_date) FROM player_stats_snapshot")
+            latest_date = cursor.fetchone()[0]
+            if latest_date:
+                where_conditions.append("pss.stat_date = ?")
+                params.append(latest_date)
+            
+            if search:
+                where_conditions.append("(p.name LIKE ? OR pss.pid LIKE ?)")
+                params.extend([f'%{search}%', f'%{search}%'])
+            
+            if where_conditions:
+                base_query += " WHERE " + " AND ".join(where_conditions)
+            
+            # 添加排序 - 增加胜率排序支持
+            valid_sort_columns = ['versus_rating', 'versus_won', 'versus_plays', 'name', 'win_rate']
+            if sort_by not in valid_sort_columns:
+                sort_by = 'versus_rating'
+            
+            if sort_order.lower() not in ['asc', 'desc']:
+                sort_order = 'desc'
+            
+            order_query = f" ORDER BY {sort_by} {sort_order.upper()}"
+            if sort_by != 'name':
+                order_query += ", p.name ASC"
+            
+            # 如果有排名过滤，需要先获取完整排序结果
+            if rank_filter:
+                # 获取完整排序的数据用于排名过滤
+                full_query = base_query + order_query
+                cursor.execute(full_query, params)
+                all_results = cursor.fetchall()
+                
+                # 应用排名过滤
+                if rank_filter == 'top10':
+                    filtered_results = all_results[:10]
+                elif rank_filter == 'top25':
+                    filtered_results = all_results[:25]
+                elif rank_filter == 'top50':
+                    filtered_results = all_results[:50]
+                elif rank_filter == 'top100':
+                    filtered_results = all_results[:100]
+                else:
+                    filtered_results = all_results
+                
+                total_count = len(filtered_results)
+                
+                # 应用分页到过滤后的结果
+                offset = (page - 1) * per_page
+                results = filtered_results[offset:offset + per_page]
+            else:
+                # 获取总数
+                count_query = f"SELECT COUNT(*) FROM ({base_query}) as subquery"
+                cursor.execute(count_query, params)
+                total_count = cursor.fetchone()[0]
+                
+                # 添加分页
+                offset = (page - 1) * per_page
+                paginated_query = base_query + order_query + " LIMIT ? OFFSET ?"
+                params.extend([per_page, offset])
+                
+                # 执行查询
+                cursor.execute(paginated_query, params)
+                results = cursor.fetchall()
+                all_results = None
+            
+            conn.close()
         
         # 格式化数据
         players_data = []
         
-        if rank_filter:
+        if rank_filter and all_results:
             # 对于排名过滤，排名就是在过滤结果中的位置
             for i, row in enumerate(results):
                 name, pid, rating, won, plays, stat_date, win_rate = row
@@ -358,8 +436,6 @@ def get_player_stats_snapshot():
         # 计算分页信息
         total_pages = (total_count + per_page - 1) // per_page
         
-        conn.close()
-        
         return jsonify({
             'players': players_data,
             'pagination': {
@@ -385,60 +461,114 @@ def get_player_stats_snapshot():
 @app.route('/api/ranking-stats')
 def get_ranking_stats():
     try:
-        # 连接到mario_filtered.db
-        conn = sqlite3.connect('mario_filtered.db')
-        cursor = conn.cursor()
-        
-        # 获取最新日期
-        cursor.execute("SELECT MAX(stat_date) FROM player_stats_snapshot")
-        latest_date = cursor.fetchone()[0]
-        
-        # 获取总玩家数
-        cursor.execute("""
-            SELECT COUNT(*) as total_players,
-                   AVG(pss.versus_rating) as avg_rating,
-                   AVG(CASE WHEN pss.versus_plays > 0 THEN (pss.versus_won * 100.0 / pss.versus_plays) ELSE 0 END) as avg_win_rate,
-                   SUM(pss.versus_won) as total_wins,
-                   SUM(pss.versus_plays) as total_plays
-            FROM player p 
-            JOIN player_stats_snapshot pss ON p.pid = pss.pid
-            WHERE pss.stat_date = ?
-        """, (latest_date,))
-        
-        stats = cursor.fetchone()
-        total_players, avg_rating, avg_win_rate, total_wins, total_plays = stats
-        
-        # 获取分数分布
-        cursor.execute("""
-            SELECT 
-                COUNT(CASE WHEN pss.versus_rating >= 5000 THEN 1 END) as rating_5000_plus,
-                COUNT(CASE WHEN pss.versus_rating >= 4000 AND pss.versus_rating < 5000 THEN 1 END) as rating_4000_4999,
-                COUNT(CASE WHEN pss.versus_rating >= 3000 AND pss.versus_rating < 4000 THEN 1 END) as rating_3000_3999,
-                COUNT(CASE WHEN pss.versus_rating >= 2000 AND pss.versus_rating < 3000 THEN 1 END) as rating_2000_2999,
-                COUNT(CASE WHEN pss.versus_rating < 2000 THEN 1 END) as rating_under_2000
-            FROM player p 
-            JOIN player_stats_snapshot pss ON p.pid = pss.pid
-            WHERE pss.stat_date = ?
-        """, (latest_date,))
-        
-        rating_distribution = cursor.fetchone()
-        
-        # 获取胜率分布
-        cursor.execute("""
-            SELECT 
-                COUNT(CASE WHEN (pss.versus_won * 100.0 / pss.versus_plays) >= 80 THEN 1 END) as winrate_80_plus,
-                COUNT(CASE WHEN (pss.versus_won * 100.0 / pss.versus_plays) >= 60 AND (pss.versus_won * 100.0 / pss.versus_plays) < 80 THEN 1 END) as winrate_60_79,
-                COUNT(CASE WHEN (pss.versus_won * 100.0 / pss.versus_plays) >= 40 AND (pss.versus_won * 100.0 / pss.versus_plays) < 60 THEN 1 END) as winrate_40_59,
-                COUNT(CASE WHEN (pss.versus_won * 100.0 / pss.versus_plays) >= 20 AND (pss.versus_won * 100.0 / pss.versus_plays) < 40 THEN 1 END) as winrate_20_39,
-                COUNT(CASE WHEN (pss.versus_won * 100.0 / pss.versus_plays) < 20 THEN 1 END) as winrate_under_20
-            FROM player p 
-            JOIN player_stats_snapshot pss ON p.pid = pss.pid
-            WHERE pss.stat_date = ? AND pss.versus_plays > 0
-        """, (latest_date,))
-        
-        winrate_distribution = cursor.fetchone()
-        
-        conn.close()
+        # 使用DatabaseAdapter处理数据库连接
+        if db.is_s3:
+            # S3数据库查询
+            # 获取最新日期
+            latest_date_query = "SELECT MAX(stat_date) FROM player_stats_snapshot"
+            latest_date_result = db.db.execute_query(latest_date_query)
+            latest_date = latest_date_result[0][0] if latest_date_result and latest_date_result[0] else None
+            
+            # 获取总玩家数
+            stats_query = """
+                SELECT COUNT(*) as total_players,
+                       AVG(pss.versus_rating) as avg_rating,
+                       AVG(CASE WHEN pss.versus_plays > 0 THEN (pss.versus_won * 100.0 / pss.versus_plays) ELSE 0 END) as avg_win_rate,
+                       SUM(pss.versus_won) as total_wins,
+                       SUM(pss.versus_plays) as total_plays
+                FROM player p 
+                JOIN player_stats_snapshot pss ON p.pid = pss.pid
+                WHERE pss.stat_date = ?
+            """
+            stats_result = db.db.execute_query(stats_query, (latest_date,))
+            stats = stats_result[0] if stats_result else (0, 0, 0, 0, 0)
+            total_players, avg_rating, avg_win_rate, total_wins, total_plays = stats
+            
+            # 获取分数分布
+            rating_dist_query = """
+                SELECT 
+                    COUNT(CASE WHEN pss.versus_rating >= 5000 THEN 1 END) as rating_5000_plus,
+                    COUNT(CASE WHEN pss.versus_rating >= 4000 AND pss.versus_rating < 5000 THEN 1 END) as rating_4000_4999,
+                    COUNT(CASE WHEN pss.versus_rating >= 3000 AND pss.versus_rating < 4000 THEN 1 END) as rating_3000_3999,
+                    COUNT(CASE WHEN pss.versus_rating >= 2000 AND pss.versus_rating < 3000 THEN 1 END) as rating_2000_2999,
+                    COUNT(CASE WHEN pss.versus_rating < 2000 THEN 1 END) as rating_under_2000
+                FROM player p 
+                JOIN player_stats_snapshot pss ON p.pid = pss.pid
+                WHERE pss.stat_date = ?
+            """
+            rating_dist_result = db.db.execute_query(rating_dist_query, (latest_date,))
+            rating_distribution = rating_dist_result[0] if rating_dist_result else (0, 0, 0, 0, 0)
+            
+            # 获取胜率分布
+            winrate_dist_query = """
+                SELECT 
+                    COUNT(CASE WHEN (pss.versus_won * 100.0 / pss.versus_plays) >= 80 THEN 1 END) as winrate_80_plus,
+                    COUNT(CASE WHEN (pss.versus_won * 100.0 / pss.versus_plays) >= 60 AND (pss.versus_won * 100.0 / pss.versus_plays) < 80 THEN 1 END) as winrate_60_79,
+                    COUNT(CASE WHEN (pss.versus_won * 100.0 / pss.versus_plays) >= 40 AND (pss.versus_won * 100.0 / pss.versus_plays) < 60 THEN 1 END) as winrate_40_59,
+                    COUNT(CASE WHEN (pss.versus_won * 100.0 / pss.versus_plays) >= 20 AND (pss.versus_won * 100.0 / pss.versus_plays) < 40 THEN 1 END) as winrate_20_39,
+                    COUNT(CASE WHEN (pss.versus_won * 100.0 / pss.versus_plays) < 20 THEN 1 END) as winrate_under_20
+                FROM player p 
+                JOIN player_stats_snapshot pss ON p.pid = pss.pid
+                WHERE pss.stat_date = ? AND pss.versus_plays > 0
+            """
+            winrate_dist_result = db.db.execute_query(winrate_dist_query, (latest_date,))
+            winrate_distribution = winrate_dist_result[0] if winrate_dist_result else (0, 0, 0, 0, 0)
+        else:
+            # 本地数据库连接
+            import sqlite3
+            conn = sqlite3.connect('mario_filtered.db')
+            cursor = conn.cursor()
+            
+            # 获取最新日期
+            cursor.execute("SELECT MAX(stat_date) FROM player_stats_snapshot")
+            latest_date = cursor.fetchone()[0]
+            
+            # 获取总玩家数
+            cursor.execute("""
+                SELECT COUNT(*) as total_players,
+                       AVG(pss.versus_rating) as avg_rating,
+                       AVG(CASE WHEN pss.versus_plays > 0 THEN (pss.versus_won * 100.0 / pss.versus_plays) ELSE 0 END) as avg_win_rate,
+                       SUM(pss.versus_won) as total_wins,
+                       SUM(pss.versus_plays) as total_plays
+                FROM player p 
+                JOIN player_stats_snapshot pss ON p.pid = pss.pid
+                WHERE pss.stat_date = ?
+            """, (latest_date,))
+            
+            stats = cursor.fetchone()
+            total_players, avg_rating, avg_win_rate, total_wins, total_plays = stats
+            
+            # 获取分数分布
+            cursor.execute("""
+                SELECT 
+                    COUNT(CASE WHEN pss.versus_rating >= 5000 THEN 1 END) as rating_5000_plus,
+                    COUNT(CASE WHEN pss.versus_rating >= 4000 AND pss.versus_rating < 5000 THEN 1 END) as rating_4000_4999,
+                    COUNT(CASE WHEN pss.versus_rating >= 3000 AND pss.versus_rating < 4000 THEN 1 END) as rating_3000_3999,
+                    COUNT(CASE WHEN pss.versus_rating >= 2000 AND pss.versus_rating < 3000 THEN 1 END) as rating_2000_2999,
+                    COUNT(CASE WHEN pss.versus_rating < 2000 THEN 1 END) as rating_under_2000
+                FROM player p 
+                JOIN player_stats_snapshot pss ON p.pid = pss.pid
+                WHERE pss.stat_date = ?
+            """, (latest_date,))
+            
+            rating_distribution = cursor.fetchone()
+            
+            # 获取胜率分布
+            cursor.execute("""
+                SELECT 
+                    COUNT(CASE WHEN (pss.versus_won * 100.0 / pss.versus_plays) >= 80 THEN 1 END) as winrate_80_plus,
+                    COUNT(CASE WHEN (pss.versus_won * 100.0 / pss.versus_plays) >= 60 AND (pss.versus_won * 100.0 / pss.versus_plays) < 80 THEN 1 END) as winrate_60_79,
+                    COUNT(CASE WHEN (pss.versus_won * 100.0 / pss.versus_plays) >= 40 AND (pss.versus_won * 100.0 / pss.versus_plays) < 60 THEN 1 END) as winrate_40_59,
+                    COUNT(CASE WHEN (pss.versus_won * 100.0 / pss.versus_plays) >= 20 AND (pss.versus_won * 100.0 / pss.versus_plays) < 40 THEN 1 END) as winrate_20_39,
+                    COUNT(CASE WHEN (pss.versus_won * 100.0 / pss.versus_plays) < 20 THEN 1 END) as winrate_under_20
+                FROM player p 
+                JOIN player_stats_snapshot pss ON p.pid = pss.pid
+                WHERE pss.stat_date = ? AND pss.versus_plays > 0
+            """, (latest_date,))
+            
+            winrate_distribution = cursor.fetchone()
+            
+            conn.close()
         
         return jsonify({
             'success': True,
