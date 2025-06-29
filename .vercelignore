@@ -14,10 +14,5 @@ pip-log.txt
 pip-delete-this-directory.txt
 update_player_stats.log
 scripts/
-start.sh
-load_dataset.py
-everyday.py
-everyday_db.py
-s3_database.py
 .github/
 README.md
