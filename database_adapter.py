@@ -7,7 +7,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 class DatabaseAdapter:
-    """数据库适配器，统一S3数据库和本地数据库的接口"""
     
     def __init__(self):
         self.db = self._get_database()
@@ -34,7 +33,7 @@ class DatabaseAdapter:
             return S3Database(bucket_name, db_key, region_name)
         else:
             # 使用本地数据库
-            print("Using local database: mario_stats.db")
+            print("Using local database: mario_filtered.db")
             return MarioDatabase()
     
     def _load_table_info(self):
@@ -54,14 +53,13 @@ class DatabaseAdapter:
     def get_user_by_id(self, user_id: str) -> Optional[Dict]:
         """根据用户ID获取用户信息"""
         if self.is_s3:
-            # S3数据库查询
-            query = "SELECT * FROM users WHERE user_id = ?"
+            # S3数据库查询 - 使用player表
+            query = "SELECT * FROM player WHERE pid = ?"
             result = self.db.execute_query(query, (user_id,))
             if result and result[0]:
                 row = result[0]
                 return {
-                    'id': row[0], 'user_id': row[1], 'code': row[2], 
-                    'name': row[3], 'created_at': row[4], 'updated_at': row[5]
+                    'pid': row[0], 'name': row[1]
                 }
         else:
             # 本地数据库查询
@@ -71,14 +69,13 @@ class DatabaseAdapter:
     def get_user_by_code(self, code: str) -> Optional[Dict]:
         """根据代码获取用户信息"""
         if self.is_s3:
-            # S3数据库查询
-            query = "SELECT * FROM users WHERE code = ?"
+            # S3数据库查询 - 使用player表
+            query = "SELECT * FROM player WHERE pid = ?"
             result = self.db.execute_query(query, (code,))
             if result and result[0]:
                 row = result[0]
                 return {
-                    'id': row[0], 'user_id': row[1], 'code': row[2], 
-                    'name': row[3], 'created_at': row[4], 'updated_at': row[5]
+                    'pid': row[0], 'name': row[1]
                 }
         else:
             # 本地数据库查询
@@ -88,11 +85,11 @@ class DatabaseAdapter:
     def get_user_stats(self, user_code: str, limit: int = None) -> List[Dict]:
         """获取用户的统计数据"""
         if self.is_s3:
-            # S3数据库查询
+            # S3数据库查询 - 使用player_stats_snapshot表
             query = """
-                SELECT * FROM daily_stats 
-                WHERE user_code = ? 
-                ORDER BY record_date DESC
+                SELECT * FROM player_stats_snapshot 
+                WHERE pid = ? 
+                ORDER BY stat_date DESC
             """
             if limit:
                 query += f" LIMIT {limit}"
@@ -100,10 +97,9 @@ class DatabaseAdapter:
             result = self.db.execute_query(query, (user_code,))
             if result:
                 return [{
-                    'id': row[0], 'user_code': row[1], 'wins': row[2], 'plays': row[3],
-                    'win_rate': row[4], 'rate': row[5], 'rate_change': row[6],
-                    'wins_total': row[7], 'plays_total': row[8], 'record_date': row[9],
-                    'record_time': row[10], 'created_at': row[11]
+                    'pid': row[0], 'stat_date': row[1], 'versus_rating': row[2], 
+                    'versus_won': row[3], 'versus_plays': row[4],
+                    'win_rate': round(row[3] / row[4] * 100, 2) if row[4] > 0 else 0
                 } for row in result]
         else:
             # 本地数据库查询
@@ -113,13 +109,12 @@ class DatabaseAdapter:
     def get_all_users(self) -> List[Dict]:
         """获取所有用户"""
         if self.is_s3:
-            # S3数据库查询
-            query = "SELECT * FROM users ORDER BY name"
+            # S3数据库查询 - 使用player表
+            query = "SELECT * FROM player ORDER BY name"
             result = self.db.execute_query(query)
             if result:
                 return [{
-                    'id': row[0], 'user_id': row[1], 'code': row[2], 
-                    'name': row[3], 'created_at': row[4], 'updated_at': row[5]
+                    'pid': row[0], 'name': row[1]
                 } for row in result]
         else:
             # 本地数据库查询
@@ -129,26 +124,26 @@ class DatabaseAdapter:
     def get_latest_stats_for_all_users(self) -> List[Dict]:
         """获取所有用户的最新统计数据"""
         if self.is_s3:
-            # S3数据库查询
+            # S3数据库查询 - 使用player和player_stats_snapshot表
             query = """
-                SELECT u.user_id, u.code, u.name, ds.*
-                FROM users u
-                LEFT JOIN daily_stats ds ON u.code = ds.user_code
-                WHERE ds.record_date = (
-                    SELECT MAX(record_date) 
-                    FROM daily_stats ds2 
-                    WHERE ds2.user_code = u.code
+                SELECT p.pid, p.name, ps.*
+                FROM player p
+                LEFT JOIN player_stats_snapshot ps ON p.pid = ps.pid
+                WHERE ps.stat_date = (
+                    SELECT MAX(stat_date) 
+                    FROM player_stats_snapshot ps2 
+                    WHERE ps2.pid = p.pid
                 )
-                ORDER BY u.name
+                ORDER BY p.name
             """
             result = self.db.execute_query(query)
             if result:
                 return [{
-                    'user_id': row[0], 'code': row[1], 'name': row[2],
-                    'wins': row[5], 'plays': row[6], 'win_rate': row[7],
-                    'rate': row[8], 'rate_change': row[9], 'wins_total': row[10],
-                    'plays_total': row[11], 'record_date': row[12], 'record_time': row[13]
-                } for row in result if row[5] is not None]
+                    'pid': row[0], 'name': row[1],
+                    'versus_rating': row[4], 'versus_won': row[5], 'versus_plays': row[6],
+                    'win_rate': round(row[5] / row[6] * 100, 2) if row[6] > 0 else 0,
+                    'stat_date': row[3]
+                } for row in result if row[4] is not None]
         else:
             # 本地数据库查询
             return self.db.get_latest_stats_for_all_users()
@@ -157,23 +152,46 @@ class DatabaseAdapter:
     def search_players(self, query: str) -> List[Dict]:
         """搜索玩家"""
         if self.is_s3:
-            # S3数据库查询
+            # S3数据库查询 - 使用player表
             search_query = f"%{query}%"
             sql_query = """
-                SELECT DISTINCT u.user_id, u.code, u.name
-                FROM users u
-                WHERE u.name LIKE ? OR u.code LIKE ? OR u.user_id LIKE ?
-                ORDER BY u.name
+                SELECT DISTINCT p.pid, p.name
+                FROM player p
+                WHERE p.name LIKE ? OR p.pid LIKE ?
+                ORDER BY p.name
                 LIMIT 20
             """
-            result = self.db.execute_query(sql_query, (search_query, search_query, search_query))
+            result = self.db.execute_query(sql_query, (search_query, search_query))
             if result:
                 return [{
-                    'user_id': row[0], 'code': row[1], 'name': row[2]
+                    'pid': row[0], 'name': row[1]
                 } for row in result]
         else:
             # 本地数据库查询
             return self.db.search_players(query)
+        return []
+    
+    def get_player_stats_delta(self, user_code: str, limit: int = None) -> List[Dict]:
+        """获取用户的统计变化数据"""
+        if self.is_s3:
+            # S3数据库查询 - 使用player_stats_delta表
+            query = """
+                SELECT * FROM player_stats_delta 
+                WHERE pid = ? 
+                ORDER BY stat_date DESC
+            """
+            if limit:
+                query += f" LIMIT {limit}"
+            
+            result = self.db.execute_query(query, (user_code,))
+            if result:
+                return [{
+                    'pid': row[0], 'stat_date': row[1], 'delta_rating': row[2], 
+                    'delta_won': row[3], 'delta_plays': row[4]
+                } for row in result]
+        else:
+            # 本地数据库查询 - 如果本地数据库支持的话
+            return []
         return []
     
     def get_user_info_from_api(self, user_id: str) -> Optional[Dict]:
@@ -195,10 +213,17 @@ class DatabaseAdapter:
         return False
     
     def get_player_name_by_code(self, code: str) -> str:
-        """根据代码获取玩家名字（仅本地数据库支持）"""
-        if not self.is_s3:
+        """根据代码获取玩家名字"""
+        if self.is_s3:
+            # S3数据库查询 - 使用player表
+            query = "SELECT name FROM player WHERE pid = ?"
+            result = self.db.execute_query(query, (code,))
+            if result and result[0]:
+                return result[0][0]
+            return code
+        else:
+            # 本地数据库查询
             return self.db.get_player_name_by_code(code)
-        return code
     
     def close(self):
         """关闭数据库连接"""
