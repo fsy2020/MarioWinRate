@@ -1,181 +1,89 @@
-# Super Mario Maker 2 数据统计网页
+# Super Mario Maker 2 数据统计系统
 
-一个现代化的网页应用，用于展示Super Mario Maker 2玩家的游戏数据统计、排名和趋势分析。
+这是一个专为 Super Mario Maker 2 多人对战模式设计的数据统计和分析系统，可以追踪玩家的游戏表现，提供详细的统计分析和排行榜功能。
 
-## 功能特性
+## ✨ 主要功能
 
-- 🏆 **排行榜系统** - 金银铜牌颁奖台展示，支持按胜率和分数排名
-- 🔍 **智能搜索** - 玩家ID搜索功能，带自动完成提示
-- 📊 **数据图表** - 多种图表展示：
-  - 每日游戏统计
-  - 分数趋势
-  - 胜率趋势
-- 📱 **响应式设计** - 支持移动端和桌面端
-- 🎨 **现代化UI** - 渐变背景、动画效果、大气设计
+- 🏆 **完整玩家数据表格** - 显示所有玩家的最新对战数据
+- 🔍 **智能搜索和过滤** - 支持玩家名字和ID的实时搜索
+- 📊 **多维度排序** - 支持按分数、胜利数、总局数和名字排序
+- 🔄 **高性能分页** - 支持106,000+玩家数据的流畅浏览
+- 👤 **玩家详情分析** - 点击玩家名称查看详细统计和图表
 
-## 技术栈
+## 技术架构
 
-- **前端**: HTML5, CSS3, JavaScript (ES6+)
-- **图表库**: Chart.js
-- **图标**: Font Awesome
-- **字体**: Google Fonts (Poppins)
-- **后端**: Python Flask
-- **数据源**: CSV文件
+### 后端
+- **Flask** - Python Web框架
+- **SQLite** - 数据库存储
+  - `mario_stats.db` - 用户管理和日常统计
+  - `mario_filtered.db` - 大规模玩家数据快照
 
-## 快速开始
+### 前端
+- **原生JavaScript** - 无框架依赖的纯JavaScript
+- **Chart.js** - 数据可视化图表库
+- **CSS3** - 现代化的响应式样式
+- **Font Awesome** - 图标库
 
-### 方法一：使用启动脚本（推荐）
+## 安装和运行
 
+### 环境要求
+- Python 3.7+
+- Flask
+- Flask-CORS
+
+### 安装步骤
+
+1. **克隆项目**
 ```bash
-./start.sh
+git clone <repository-url>
+cd MarioWinRate
 ```
 
-### 方法二：手动启动
-
-#### 1. 安装依赖
-
+2. **安装依赖**
 ```bash
-pip3 install -r requirements.txt
+pip install -r requirements.txt
 ```
 
-#### 2. 启动服务器
-
+3. **启动服务器**
 ```bash
-python3 server.py
+python server.py
 ```
 
-#### 3. 访问网页
+4. **访问应用**
+- 主页: http://localhost:5001/
+- 管理面板: http://localhost:5001/admin.html
 
-打开浏览器访问: `http://localhost:5000`
+## API 接口
 
+### 核心接口
 
-## 数据格式
-
-CSV文件应包含以下字段：
-- `wins`: 每日胜利数
-- `plays`: 每日游戏数
-- `win_rate`: 每日胜率
-- `rate`: 分数
-- `rate_change`: 分数变化
-- `wins_total`: 总胜利数
-- `plays_total`: 总游戏数
-- `time`: 记录时间
-
-## 界面说明
-
-### 搜索功能
-- 输入玩家ID进行搜索
-- 支持自动完成和模糊匹配
-- 点击搜索结果查看详细数据
-
-### 排行榜
-- **胜率排名**: 按总胜率排序（需至少100局游戏）
-- **分数排名**: 按当前分数排序
-- 金银铜牌颁奖台展示前三名
-- 完整排名列表显示所有玩家
-
-### 玩家详情
-- 总胜利数、总游戏数
-- 总胜率、当前分数
-- 美观的卡片式布局
-
-### 数据图表
-- **每日统计**: 最近30天的胜利数和游戏数柱状图
-- **分数趋势**: 最近60天的分数变化趋势线
-- **胜率趋势**: 最近60天的每日胜率趋势线
-
-## 使用流程
-
-1. **启动应用**: 运行 `./start.sh` 或 `python3 server.py`
-2. **访问网页**: 打开 `http://localhost:5000`
-3. **查看排名**: 默认显示胜率排名，可切换到分数排名
-4. **搜索玩家**: 在搜索框输入玩家ID
-5. **查看详情**: 点击玩家名称或搜索结果查看详细数据
-6. **分析图表**: 切换不同图表类型分析数据趋势
-
-## 自定义配置
-
-### 修改数据源
-在 `everyday.py` 中的 `user_ids` 列表添加新的玩家ID：
-
-```python
-user_ids = ["Y9P7BN4JF", "SQW0796SF", "GDH8R4V4G", ...]
+#### 玩家数据快照
+```http
+GET /api/player-stats-snapshot
 ```
 
-### 调整排名规则
-在 `script.js` 的 `updateRanking()` 函数中修改排序逻辑。
+#### 用户统计数据
+```http
+GET /api/user/{user_id}/stats
+```
 
-### 自定义样式
-修改 `styles.css` 中的颜色、字体和布局样式。
+#### 搜索玩家
+```http
+GET /api/search-players?q={query}
+```
 
-### 修改服务器端口
-在 `server.py` 中修改 `port=5000` 为其他端口。
+#### 最新统计数据
+```http
+GET /api/latest-stats
+```
 
-## 注意事项
+## 数据库结构
 
-- 确保data目录中有足够的CSV数据文件
-- CSV文件格式必须与everyday.py生成的格式一致
-- 建议定期运行everyday.py更新数据
-- 首次加载可能需要一些时间来读取所有数据
-- 胜率排名只显示至少玩了100局游戏的玩家
+### mario_stats.db
+- `users` - 用户信息表
+- `daily_stats` - 每日统计表
 
-## 故障排除
-
-### 端口占用
-如果遇到端口5000被占用的错误，可以：
-1. 修改 `server.py` 中的端口号
-2. 或者停止占用端口的程序
-
-### 无法访问
-1. 检查防火墙设置
-2. 确认服务器正常启动
-3. 检查浏览器控制台是否有错误
-
-### 数据不显示
-1. 确认data目录存在且包含CSV文件
-2. 检查CSV文件格式是否正确
-3. 查看浏览器控制台的错误信息
-
-## 开发者信息
-
-这个项目基于现有的Mario Maker 2数据收集脚本开发，为数据添加了可视化的网页界面。
-
-## 超级马里奥制造2 胜率统计教程
-## 中文
-
-使用tgr网站api自动获取胜率变化，并且做成CSV以便做成图表
-
-## 效果图片
-![效果图片](images/crontab.png)
-![每日数据整合图](images/Panzi.png)
-
-## 使用说明
-先下载包requirements.txt
-然后修改代码中的user_id为自己想要获取的，如果想要添加多个用户，可以添加到user_ids的list数组中，然后再everyday.py目录下，每日运行。
-
-## 获取自己的user_id
-![用户ID获取](images/user_id.png)
-
-## 自动执行
-1. 设置好crontab
-2. 0 0 * * * /Users/hans/Documents/Github/MarioWinRate/everyday.py
-
-### 参数
-user_id: 自己的uid，tgr网站上查看或者超级马里奥制造2里面查看
-begin_plays: 起始游戏数
-begin_won: 起始胜利数
-begin_rate: 起始分数
-
-今日胜利数 = 今日总胜利数 - 昨日总胜利数
-今日游戏数 = 今日总游戏数 - 昨日总游戏数
-今日胜率 = 今日胜利数 / 今日游戏数
-
-今日分数 = api获取
-今日分数变化 = 今日分数 - 昨日分数
-
-输出数据以CSV形式保存
-
-程序优化：
-1. 加入了错误处理，当api获取失败时，程序会自动退出
-2. 当今日游戏数为0时，避免了除0错误
-3. 当CSV文件不存在时，会自动创建文件并写入表头
+### mario_filtered.db
+- `player` - 玩家基本信息 (pid, name)
+- `player_stats_snapshot` - 玩家数据快照
+- `player_stats_delta` - 数据变化记录

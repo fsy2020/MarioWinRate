@@ -1,127 +1,404 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Super Mario Maker 2数据统计</title>
+    <title data-i18n="page-title">Super Mario Maker 2 Statistics</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .controls-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr auto auto auto auto;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .search-input {
+            padding: 12px 15px;
+            border: 2px solid #e8f0ff;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+        }
+
+        .select-input {
+            padding: 12px 15px;
+            border: 2px solid #e8f0ff;
+            border-radius: 10px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .players-table-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+
+        .players-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .players-table th,
+        .players-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .players-table th {
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
+            font-weight: 600;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            font-size: 13px;
+        }
+
+        .players-table th:hover {
+            background: linear-gradient(135deg, #e8f0ff 0%, #d8e8ff 100%);
+        }
+
+        .players-table th.sortable::after {
+            content: '\f0dc';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            right: 10px;
+            opacity: 0.3;
+        }
+
+        .players-table th.sort-asc::after {
+            content: '\f0de';
+            opacity: 1;
+            color: #667eea;
+        }
+
+        .players-table th.sort-desc::after {
+            content: '\f0dd';
+            opacity: 1;
+            color: #667eea;
+        }
+
+        .players-table tr:hover {
+            background: #f8f9ff;
+        }
+
+        .rank-number {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 15px;
+        }
+
+        .player-name {
+            font-weight: 600;
+            color: #333;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .player-name:hover {
+            color: #667eea;
+            text-decoration: underline;
+        }
+
+        .stat-value {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .win-rate {
+            color: #28a745;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .pagination-btn {
+            padding: 8px 12px;
+            border: 2px solid #e8f0ff;
+            background: white;
+            color: #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .pagination-btn:hover:not(.disabled) {
+            background: #667eea;
+            color: white;
+        }
+
+        .pagination-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .pagination-btn.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .pagination-info {
+            margin: 0 20px;
+            color: #666;
+            font-weight: 500;
+            font-size: 13px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .loading i {
+            font-size: 1.7rem;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .controls-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .players-table {
+                font-size: 12px;
+            }
+            
+            .players-table th,
+            .players-table td {
+                padding: 8px 6px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
+    <div class="main-container">
         <!-- Header -->
         <header class="header">
             <div class="header-content">
                 <div class="header-left">
-                    <h1><i class="fas fa-gamepad"></i> Super Mario Maker 2数据统计</h1>
-                    <p>追踪你的多人对战游戏表现，查看排名和数据分析</p>
+                    <h1><i class="fas fa-gamepad"></i> <span data-i18n="page-title">Super Mario Maker 2 Statistics</span></h1>
+                    <p data-i18n="page-subtitle">Track your multiplayer versus game performance, view rankings and data analysis</p>
                 </div>
                 <div class="header-right">
-                    <!-- Search Section moved to header -->
-                    <div class="search-container">
-                        <div class="search-box">
-                            <i class="fas fa-search"></i>
-                            <input type="text" id="playerSearch" placeholder="输入玩家名字或ID搜索...">
-                            <button id="searchBtn">搜索</button>
+                    <!-- Language Switcher -->
+                    <div class="language-switcher">
+                        <button class="language-btn" id="languageBtn">
+                            <i class="fas fa-globe"></i>
+                            <span id="currentLanguage">EN</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="language-dropdown" id="languageDropdown">
+                            <div class="language-option" data-lang="en">
+                                <span class="flag">🇺🇸</span>
+                                <span>EN</span>
+                            </div>
+                            <div class="language-option" data-lang="zh-CN">
+                                <span class="flag">🇨🇳</span>
+                                <span>中文</span>
+                            </div>
+                            <div class="language-option" data-lang="ja">
+                                <span class="flag">🇯🇵</span>
+                                <span>日本語</span>
+                            </div>
                         </div>
-                        <div class="search-suggestlions" id="searchSuggestions"></div>
                     </div>
                 </div>
             </div>
         </header>
 
-        <!-- Podium Section - 左边排行榜，右边奖牌 -->
-        <section class="podium-section">
-            <div class="podium-main-layout">
-                <!-- 左侧排行榜 -->
-                <div class="podium-left-content">
-                    <div>
-                        <h2><i class="fas fa-trophy"></i> 排行榜</h2>
-                        <div class="ranking-tabs">
-                            <button class="tab-btn active" data-tab="winrate">胜率排名</button>
-                            <button class="tab-btn" data-tab="rating">分数排名</button>
-                        </div>
-                    </div>
-                    
-                    <div class="full-ranking">
-                        <div class="ranking-list" id="rankingList"></div>
+        <!-- Controls Section -->
+        <section class="controls-section">
+            <div class="controls-grid">
+                <input type="text" id="searchInput" class="search-input" data-i18n-placeholder="search-placeholder" placeholder="Search player name or ID...">
+                
+                <select id="sortSelect" class="select-input">
+                    <option value="versus_rating" data-i18n="sort-rating">Sort by Rating</option>
+                    <option value="win_rate" data-i18n="sort-winrate">Sort by Win Rate</option>
+                    <option value="versus_won" data-i18n="sort-wins">Sort by Wins</option>
+                    <option value="versus_plays" data-i18n="sort-plays">Sort by Total Games</option>
+                    <option value="name" data-i18n="sort-name">Sort by Name</option>
+                </select>
+                
+                <select id="orderSelect" class="select-input">
+                    <option value="desc" data-i18n="order-desc">Descending</option>
+                    <option value="asc" data-i18n="order-asc">Ascending</option>
+                </select>
+                
+                <select id="rankFilterSelect" class="select-input">
+                    <option value="" data-i18n="filter-all">All Rankings</option>
+                    <option value="top10" data-i18n="filter-top10">Top 10</option>
+                    <option value="top25" data-i18n="filter-top25">Top 25</option>
+                    <option value="top50" data-i18n="filter-top50">Top 50</option>
+                    <option value="top100" data-i18n="filter-top100">Top 100</option>
+                </select>
+                
+                <select id="perPageSelect" class="select-input">
+                    <option value="25">25<span data-i18n="per-page-suffix">/page</span></option>
+                    <option value="50" selected>50<span data-i18n="per-page-suffix">/page</span></option>
+                    <option value="100">100<span data-i18n="per-page-suffix">/page</span></option>
+                </select>
+            </div>
+        </section>
+
+        <!-- Ranking Statistics Section -->
+        <section class="ranking-stats-section" id="rankingStatsSection">
+            <h2><i class="fas fa-chart-bar"></i> <span data-i18n="ranking-stats">Ranking Statistics</span></h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-users"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="totalPlayers">-</div>
+                        <div class="stat-label" data-i18n="total-players">Total Players</div>
                     </div>
                 </div>
-                
-                <!-- 右侧颁奖台（奖牌） -->
-                <div class="podium-right-content">
-                    <div class="podium-container">
-                        <div class="podium">
-                            <div class="podium-place second">
-                                <div class="podium-player" id="second-place">
-                                    <div class="medal silver"><i class="fas fa-medal"></i></div>
-                                    <div class="player-info">
-                                        <div class="player-name">-</div>
-                                        <div class="player-stats">-</div>
-                                    </div>
-                                </div>
-                                <div class="podium-base silver-base">2</div>
-                            </div>
-                            <div class="podium-place first">
-                                <div class="podium-player" id="first-place">
-                                    <div class="medal gold"><i class="fas fa-crown"></i></div>
-                                    <div class="player-info">
-                                        <div class="player-name">-</div>
-                                        <div class="player-stats">-</div>
-                                    </div>
-                                </div>
-                                <div class="podium-base gold-base">1</div>
-                            </div>
-                            <div class="podium-place third">
-                                <div class="podium-player" id="third-place">
-                                    <div class="medal bronze"><i class="fas fa-medal"></i></div>
-                                    <div class="player-info">
-                                        <div class="player-name">-</div>
-                                        <div class="player-stats">-</div>
-                                    </div>
-                                </div>
-                                <div class="podium-base bronze-base">3</div>
-                            </div>
-                        </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-star"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="avgRating">-</div>
+                        <div class="stat-label" data-i18n="avg-rating">Average Rating</div>
                     </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-percentage"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="avgWinRate">-</div>
+                        <div class="stat-label" data-i18n="avg-winrate">Average Win Rate</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-trophy"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="totalWins">-</div>
+                        <div class="stat-label" data-i18n="total-wins">Total Wins</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="distribution-grid">
+                <div class="distribution-card">
+                    <h3><i class="fas fa-medal"></i> <span data-i18n="rating-distribution">Rating Distribution</span></h3>
+                    <div class="distribution-bars" id="ratingDistribution">
+                        <!-- 分数分布将在这里动态生成 -->
+                    </div>
+                </div>
+                <div class="distribution-card">
+                    <h3><i class="fas fa-target"></i> <span data-i18n="winrate-distribution">Win Rate Distribution</span></h3>
+                    <div class="distribution-bars" id="winrateDistribution">
+                        <!-- 胜率分布将在这里动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Players Table -->
+        <section class="players-table-container">
+            <div id="loadingIndicator" class="loading">
+                <i class="fas fa-spinner"></i>
+                <p data-i18n="loading">Loading data...</p>
+            </div>
+
+            <div id="playersTableWrapper" style="display: none;">
+                <table class="players-table">
+                    <thead>
+                        <tr>
+                            <th data-i18n="rank">Rank</th>
+                            <th class="sortable" data-sort="name" data-i18n="player-name">Player Name</th>
+                            <th class="sortable" data-sort="versus_rating" data-i18n="rating">Rating</th>
+                            <th class="sortable" data-sort="versus_won" data-i18n="wins">Wins</th>
+                            <th class="sortable" data-sort="versus_plays" data-i18n="total-plays">Total Games</th>
+                            <th class="sortable" data-sort="win_rate" data-i18n="win-rate">Win Rate</th>
+                            <th data-i18n="data-date">Data Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="playersTableBody">
+                    </tbody>
+                </table>
+
+                <!-- Pagination -->
+                <div class="pagination" id="pagination">
                 </div>
             </div>
         </section>
 
         <!-- Player Details Section -->
         <section class="player-details" id="playerDetails" style="display: none;">
-            <h2><i class="fas fa-user"></i> 玩家详情</h2>
+            <h2><i class="fas fa-user"></i> <span data-i18n="player-details">Player Details</span></h2>
             <div class="player-name-display" id="playerNameDisplay"></div>
             <div class="player-stats-container">
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-star"></i></div>
                     <div class="stat-info">
                         <div class="stat-value" id="currentRating">0</div>
-                        <div class="stat-label">当前分数</div>
+                        <div class="stat-label" data-i18n="current-rating">Current Rating</div>
                     </div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-percentage"></i></div>
                     <div class="stat-info">
                         <div class="stat-value" id="overallWinRate">0%</div>
-                        <div class="stat-label">总胜率</div>
+                        <div class="stat-label" data-i18n="overall-winrate">Overall Win Rate</div>
                     </div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-trophy"></i></div>
                     <div class="stat-info">
                         <div class="stat-value" id="totalWins">0</div>
-                        <div class="stat-label">总胜利数</div>
+                        <div class="stat-label" data-i18n="total-wins">Total Wins</div>
                     </div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-gamepad"></i></div>
                     <div class="stat-info">
                         <div class="stat-value" id="totalPlays">0</div>
-                        <div class="stat-label">总游戏数</div>
+                        <div class="stat-label" data-i18n="total-games">Total Games</div>
                     </div>
                 </div>
             </div>
@@ -129,11 +406,11 @@
 
         <!-- Charts Section -->
         <section class="charts-section" id="chartsSection" style="display: none;">
-            <h2><i class="fas fa-chart-line"></i> 数据图表</h2>
+            <h2><i class="fas fa-chart-line"></i> <span data-i18n="data-charts">Data Charts</span></h2>
             <div class="chart-tabs">
-                <button class="chart-tab-btn active" data-chart="dailyStats">每日统计</button>
-                <button class="chart-tab-btn" data-chart="ratingTrend">分数趋势</button>
-                <button class="chart-tab-btn" data-chart="winRateTrend">胜率趋势</button>
+                <button class="chart-tab-btn active" data-chart="dailyStats" data-i18n="daily-stats">Daily Statistics</button>
+                <button class="chart-tab-btn" data-chart="ratingTrend" data-i18n="rating-trend">Rating Trend</button>
+                <button class="chart-tab-btn" data-chart="winRateTrend" data-i18n="winrate-trend">Win Rate Trend</button>
             </div>
             <div class="chart-container">
                 <canvas id="mainChart"></canvas>
@@ -142,5 +419,379 @@
     </div>
 
     <script src="script.js"></script>
+    <script>
+        // 新的玩家数据浏览器类
+        class PlayersDataViewer {
+            constructor() {
+                this.currentPage = 1;
+                this.perPage = 50;
+                this.sortBy = 'versus_rating';
+                this.sortOrder = 'desc';
+                this.search = '';
+                this.rankFilter = '';  // 新增：排名过滤
+                this.isLoading = false;
+
+                this.initEventListeners();
+                this.loadPlayers();
+                this.loadRankingStats(); // 加载排名统计
+            }
+
+            initEventListeners() {
+                // 主搜索框输入
+                const searchInput = document.getElementById('searchInput');
+                let searchTimeout;
+                searchInput.addEventListener('input', (e) => {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        this.search = e.target.value.trim();
+                        this.currentPage = 1;
+                        this.loadPlayers();
+                    }, 500);
+                });
+
+                // 排序选择
+                document.getElementById('sortSelect').addEventListener('change', (e) => {
+                    this.sortBy = e.target.value;
+                    this.currentPage = 1;
+                    this.loadPlayers();
+                });
+
+                // 排序顺序
+                document.getElementById('orderSelect').addEventListener('change', (e) => {
+                    this.sortOrder = e.target.value;
+                    this.currentPage = 1;
+                    this.loadPlayers();
+                });
+                
+                // 排名过滤
+                document.getElementById('rankFilterSelect').addEventListener('change', (e) => {
+                    this.rankFilter = e.target.value;
+                    this.currentPage = 1;
+                    this.loadPlayers();
+                });
+
+                // 每页数量
+                document.getElementById('perPageSelect').addEventListener('change', (e) => {
+                    this.perPage = parseInt(e.target.value);
+                    this.currentPage = 1;
+                    this.loadPlayers();
+                });
+
+                // 表头排序
+                document.querySelectorAll('.sortable').forEach(th => {
+                    th.addEventListener('click', () => {
+                        const sortField = th.dataset.sort;
+                        if (this.sortBy === sortField) {
+                            this.sortOrder = this.sortOrder === 'desc' ? 'asc' : 'desc';
+                        } else {
+                            this.sortBy = sortField;
+                            this.sortOrder = sortField === 'name' ? 'asc' : 'desc';
+                        }
+                        this.currentPage = 1;
+                        this.updateSortHeaders();
+                        this.loadPlayers();
+                    });
+                });
+            }
+
+            updateSortHeaders() {
+                document.querySelectorAll('.sortable').forEach(th => {
+                    th.classList.remove('sort-asc', 'sort-desc');
+                    if (th.dataset.sort === this.sortBy) {
+                        th.classList.add(this.sortOrder === 'asc' ? 'sort-asc' : 'sort-desc');
+                    }
+                });
+            }
+
+            async loadPlayers() {
+                if (this.isLoading) return;
+                
+                this.isLoading = true;
+                this.showLoading();
+
+                try {
+                    const params = new URLSearchParams({
+                        page: this.currentPage,
+                        per_page: this.perPage,
+                        sort_by: this.sortBy,
+                        sort_order: this.sortOrder,
+                        search: this.search,
+                        rank_filter: this.rankFilter  // 新增：排名过滤参数
+                    });
+
+                    const response = await fetch(`/api/player-stats-snapshot?${params}`);
+                    const data = await response.json();
+
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+
+                    this.renderPlayersTable(data.players, data.pagination);
+                    this.renderPagination(data.pagination);
+                    this.updateSortHeaders();
+                    this.hideLoading();
+
+                } catch (error) {
+                    console.error('Error loading players:', error);
+                    this.showError(error.message);
+                } finally {
+                    this.isLoading = false;
+                }
+            }
+
+            renderPlayersTable(players, pagination) {
+                const tbody = document.getElementById('playersTableBody');
+                tbody.innerHTML = '';
+
+                players.forEach((player, index) => {
+                    // 使用服务器返回的排名，如果没有则计算
+                    const rank = player.rank || ((pagination.current_page - 1) * pagination.per_page + index + 1);
+                    const row = document.createElement('tr');
+                    
+                    // 为前三名添加特殊样式
+                    let rankClass = 'rank-number';
+                    if (rank === 1) rankClass += ' rank-gold';
+                    else if (rank === 2) rankClass += ' rank-silver';
+                    else if (rank === 3) rankClass += ' rank-bronze';
+                    else if (rank <= 10) rankClass += ' rank-top10';
+                    
+                    row.innerHTML = `
+                        <td><span class="${rankClass}">${rank}</span></td>
+                        <td><span class="player-name" onclick="window.selectPlayerFromTable('${player.pid}')">${this.escapeHtml(player.name)}</span></td>
+                        <td><span class="stat-value">${player.versus_rating.toLocaleString()}</span></td>
+                        <td><span class="stat-value">${player.versus_won.toLocaleString()}</span></td>
+                        <td><span class="stat-value">${player.versus_plays.toLocaleString()}</span></td>
+                        <td><span class="stat-value win-rate">${player.win_rate}%</span></td>
+                        <td>${player.stat_date}</td>
+                    `;
+                    
+                    tbody.appendChild(row);
+                });
+            }
+
+            renderPagination(pagination) {
+                // 存储分页数据以便语言切换时刷新
+                this.lastPaginationData = pagination;
+                
+                const paginationEl = document.getElementById('pagination');
+                paginationEl.innerHTML = '';
+
+                // Previous button
+                const prevBtn = document.createElement('button');
+                prevBtn.className = `pagination-btn ${!pagination.has_prev ? 'disabled' : ''}`;
+                prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+                prevBtn.onclick = () => pagination.has_prev && this.goToPage(pagination.current_page - 1);
+                paginationEl.appendChild(prevBtn);
+
+                // Page numbers
+                const startPage = Math.max(1, pagination.current_page - 2);
+                const endPage = Math.min(pagination.total_pages, pagination.current_page + 2);
+
+                if (startPage > 1) {
+                    const firstBtn = document.createElement('button');
+                    firstBtn.className = 'pagination-btn';
+                    firstBtn.textContent = '1';
+                    firstBtn.onclick = () => this.goToPage(1);
+                    paginationEl.appendChild(firstBtn);
+
+                    if (startPage > 2) {
+                        const dotsEl = document.createElement('span');
+                        dotsEl.textContent = '...';
+                        dotsEl.className = 'pagination-info';
+                        paginationEl.appendChild(dotsEl);
+                    }
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.className = `pagination-btn ${i === pagination.current_page ? 'active' : ''}`;
+                    pageBtn.textContent = i;
+                    pageBtn.onclick = () => this.goToPage(i);
+                    paginationEl.appendChild(pageBtn);
+                }
+
+                if (endPage < pagination.total_pages) {
+                    if (endPage < pagination.total_pages - 1) {
+                        const dotsEl = document.createElement('span');
+                        dotsEl.textContent = '...';
+                        dotsEl.className = 'pagination-info';
+                        paginationEl.appendChild(dotsEl);
+                    }
+
+                    const lastBtn = document.createElement('button');
+                    lastBtn.className = 'pagination-btn';
+                    lastBtn.textContent = pagination.total_pages;
+                    lastBtn.onclick = () => this.goToPage(pagination.total_pages);
+                    paginationEl.appendChild(lastBtn);
+                }
+
+                // Next button
+                const nextBtn = document.createElement('button');
+                nextBtn.className = `pagination-btn ${!pagination.has_next ? 'disabled' : ''}`;
+                nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+                nextBtn.onclick = () => pagination.has_next && this.goToPage(pagination.current_page + 1);
+                paginationEl.appendChild(nextBtn);
+
+                // Page info with internationalization
+                const infoEl = document.createElement('div');
+                infoEl.className = 'pagination-info';
+                
+                // 使用国际化文本
+                const pageInfo = this.getI18nText('page-info')
+                    .replace('{current}', pagination.current_page)
+                    .replace('{total}', pagination.total_pages)
+                    .replace('{count}', pagination.total_count.toLocaleString());
+                
+                infoEl.textContent = pageInfo;
+                paginationEl.appendChild(infoEl);
+            }
+
+            goToPage(page) {
+                this.currentPage = page;
+                this.loadPlayers();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            showLoading() {
+                document.getElementById('loadingIndicator').style.display = 'block';
+                document.getElementById('playersTableWrapper').style.display = 'none';
+            }
+
+            hideLoading() {
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('playersTableWrapper').style.display = 'block';
+            }
+
+            showError(message) {
+                const loadingEl = document.getElementById('loadingIndicator');
+                
+                // 获取国际化的错误信息
+                const errorPrefix = this.getI18nText('error-loading');
+                
+                loadingEl.innerHTML = `
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>${errorPrefix}: ${message}</p>
+                `;
+                this.hideLoading();
+            }
+            
+            // 获取国际化文本的辅助函数
+            getI18nText(key) {
+                // 使用script.js中定义的国际化系统
+                if (window.i18n && window.i18n.translations && window.i18n.currentLanguage) {
+                    return window.i18n.translations[window.i18n.currentLanguage][key] || key;
+                }
+                // 如果i18n系统不可用，使用全局t函数作为备选
+                if (typeof t === 'function') {
+                    return t(key);
+                }
+                // 最后的默认英文文本备选
+                const defaultTexts = {
+                    'error-loading': 'Error loading data',
+                    'page-info': 'Page {current} of {total} ({count} total records)',
+                    'page-of': 'of',
+                    'total-records': 'total records'
+                };
+                return defaultTexts[key] || key;
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+            
+            // 加载排名统计数据
+            async loadRankingStats() {
+                try {
+                    const response = await fetch('/api/ranking-stats');
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        this.renderRankingStats(result.data);
+                    } else {
+                        console.error('Failed to load ranking stats:', result.error);
+                    }
+                } catch (error) {
+                    console.error('Error loading ranking stats:', error);
+                }
+            }
+            
+            // 渲染排名统计数据
+            renderRankingStats(data) {
+                // 更新基本统计
+                document.getElementById('totalPlayers').textContent = data.total_players.toLocaleString();
+                document.getElementById('avgRating').textContent = data.avg_rating.toLocaleString();
+                document.getElementById('avgWinRate').textContent = data.avg_win_rate + '%';
+                document.getElementById('totalWins').textContent = data.total_wins.toLocaleString();
+                
+                // 渲染分数分布
+                this.renderDistribution('ratingDistribution', data.rating_distribution, 'rating');
+                
+                // 渲染胜率分布
+                this.renderDistribution('winrateDistribution', data.winrate_distribution, 'winrate');
+            }
+            
+            // 渲染分布图
+            renderDistribution(containerId, distribution, type) {
+                const container = document.getElementById(containerId);
+                container.innerHTML = '';
+                
+                const total = Object.values(distribution).reduce((sum, count) => sum + count, 0);
+                
+                Object.entries(distribution).forEach(([range, count]) => {
+                    const percentage = total > 0 ? (count / total * 100) : 0;
+                    
+                    const barElement = document.createElement('div');
+                    barElement.className = 'distribution-bar';
+                    
+                    // 确定样式类
+                    let barClass = '';
+                    if (type === 'rating') {
+                        if (range.includes('5000')) barClass = 'bar-rating-5000';
+                        else if (range.includes('4000')) barClass = 'bar-rating-4000';
+                        else if (range.includes('3000')) barClass = 'bar-rating-3000';
+                        else if (range.includes('2000')) barClass = 'bar-rating-2000';
+                        else barClass = 'bar-rating-under';
+                    } else {
+                        if (range.includes('80')) barClass = 'bar-winrate-80';
+                        else if (range.includes('60')) barClass = 'bar-winrate-60';
+                        else if (range.includes('40')) barClass = 'bar-winrate-40';
+                        else if (range.includes('20')) barClass = 'bar-winrate-20';
+                        else barClass = 'bar-winrate-under';
+                    }
+                    
+                    barElement.innerHTML = `
+                        <div class="bar-label">${range}</div>
+                        <div class="bar-visual">
+                            <div class="bar-fill ${barClass}" style="width: ${percentage}%"></div>
+                        </div>
+                        <div class="bar-count">${count}</div>
+                    `;
+                    
+                    container.appendChild(barElement);
+                });
+            }
+            
+            // 刷新分页显示（用于语言切换时更新）
+            refreshPagination() {
+                if (this.lastPaginationData) {
+                    this.renderPagination(this.lastPaginationData);
+                }
+            }
+        }
+
+        // 全局函数供表格中的玩家名称点击使用
+        window.selectPlayerFromTable = function(playerId) {
+            if (window.selectPlayer) {
+                window.selectPlayer(playerId);
+            }
+        };
+
+        // 初始化玩家数据浏览器
+        document.addEventListener('DOMContentLoaded', () => {
+            window.playersDataViewer = new PlayersDataViewer();
+        });
+    </script>
 </body>
 </html> 
