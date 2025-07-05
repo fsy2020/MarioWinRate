@@ -1021,4 +1021,469 @@ function hideLoading() {
             switchRankingTab(tabType);
         });
     });
-} 
+}
+
+// 新增：玩家历史数据相关函数
+async function showPlayerHistoryModal(pid, playerName) {
+    try {
+        // 显示加载状态
+        const modal = document.getElementById('playerHistoryModal');
+        if (!modal) {
+            createPlayerHistoryModal();
+        }
+        
+        document.getElementById('playerHistoryModal').style.display = 'block';
+        document.getElementById('historyPlayerName').textContent = playerName;
+        document.getElementById('historyContent').innerHTML = '<div class="loading">Loading player history...</div>';
+        
+        // 获取玩家历史数据
+        const response = await fetch(`/api/player-history/${pid}?days=30`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch player history');
+        }
+        
+        const data = await response.json();
+        displayPlayerHistory(data);
+        
+    } catch (error) {
+        console.error('Error loading player history:', error);
+        document.getElementById('historyContent').innerHTML = '<div class="error">Error loading player history</div>';
+    }
+}
+
+function createPlayerHistoryModal() {
+    const modalHTML = `
+        <div id="playerHistoryModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="historyPlayerName">Player History</h2>
+                    <span class="close" onclick="closePlayerHistoryModal()">&times;</span>
+                </div>
+                <div id="historyContent" class="modal-body">
+                    <!-- Content will be loaded here -->
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // 点击模态框外部关闭
+    document.getElementById('playerHistoryModal').onclick = function(event) {
+        if (event.target === this) {
+            closePlayerHistoryModal();
+        }
+    };
+}
+
+function closePlayerHistoryModal() {
+    document.getElementById('playerHistoryModal').style.display = 'none';
+}
+
+function displayPlayerHistory(data) {
+    const { player, history, stats, days } = data;
+    
+    let historyHTML = `
+        <div class="player-summary">
+            <div class="summary-item">
+                <label>Current Rating:</label>
+                <span class="rating">${player.current_rating}</span>
+            </div>
+            <div class="summary-item">
+                <label>Current Win Rate:</label>
+                <span class="win-rate">${player.current_win_rate}%</span>
+            </div>
+            <div class="summary-item">
+                <label>Total Games:</label>
+                <span>${player.current_plays}</span>
+            </div>
+            <div class="summary-item">
+                <label>Code:</label>
+                <span>${player.code || 'N/A'}</span>
+            </div>
+        </div>
+        
+        <div class="history-tabs">
+            <button class="tab-button active" onclick="showHistoryTab('chart')">Performance Chart</button>
+            <button class="tab-button" onclick="showHistoryTab('table')">Data Table</button>
+        </div>
+        
+        <div id="historyChart" class="tab-content active">
+            <canvas id="playerHistoryChart" width="800" height="400"></canvas>
+        </div>
+        
+        <div id="historyTable" class="tab-content">
+            <div class="stats-summary">
+                <h3>30-Day Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <label>Max Rating:</label>
+                        <span>${stats.max_rating || 'N/A'}</span>
+                    </div>
+                    <div class="stat-item">
+                        <label>Min Rating:</label>
+                        <span>${stats.min_rating || 'N/A'}</span>
+                    </div>
+                    <div class="stat-item">
+                        <label>Avg Rating:</label>
+                        <span>${stats.avg_rating || 'N/A'}</span>
+                    </div>
+                    <div class="stat-item">
+                        <label>Max Win Rate:</label>
+                        <span>${stats.max_win_rate || 'N/A'}%</span>
+                    </div>
+                    <div class="stat-item">
+                        <label>Min Win Rate:</label>
+                        <span>${stats.min_win_rate || 'N/A'}%</span>
+                    </div>
+                    <div class="stat-item">
+                        <label>Avg Win Rate:</label>
+                        <span>${stats.avg_win_rate || 'N/A'}%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="history-data-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Rating</th>
+                            <th>Wins</th>
+                            <th>Total Games</th>
+                            <th>Win Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+    
+    history.forEach(record => {
+        const date = new Date(record.created_at).toLocaleDateString();
+        historyHTML += `
+            <tr>
+                <td>${date}</td>
+                <td>${record.versus_rating}</td>
+                <td>${record.versus_won}</td>
+                <td>${record.versus_plays}</td>
+                <td>${record.win_rate}%</td>
+            </tr>
+        `;
+    });
+    
+    historyHTML += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('historyContent').innerHTML = historyHTML;
+    
+    // 绘制图表
+    drawPlayerHistoryChart(history);
+}
+
+function showHistoryTab(tabName) {
+    // 更新标签按钮状态
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[onclick="showHistoryTab('${tabName}')"]`).classList.add('active');
+    
+    // 更新内容显示
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById(tabName === 'chart' ? 'historyChart' : 'historyTable').classList.add('active');
+}
+
+function drawPlayerHistoryChart(history) {
+    const canvas = document.getElementById('playerHistoryChart');
+    const ctx = canvas.getContext('2d');
+    
+    // 清空画布
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    if (history.length === 0) {
+        ctx.fillStyle = '#666';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('No historical data available', canvas.width / 2, canvas.height / 2);
+        return;
+    }
+    
+    // 准备数据
+    const ratings = history.map(h => h.versus_rating);
+    const winRates = history.map(h => h.win_rate);
+    const dates = history.map(h => new Date(h.created_at));
+    
+    // 计算图表区域
+    const padding = 60;
+    const chartWidth = canvas.width - 2 * padding;
+    const chartHeight = canvas.height - 2 * padding;
+    
+    // 计算数据范围
+    const minRating = Math.min(...ratings);
+    const maxRating = Math.max(...ratings);
+    const minWinRate = Math.min(...winRates);
+    const maxWinRate = Math.max(...winRates);
+    
+    // 绘制坐标轴
+    ctx.strokeStyle = '#ddd';
+    ctx.lineWidth = 1;
+    
+    // X轴
+    ctx.beginPath();
+    ctx.moveTo(padding, canvas.height - padding);
+    ctx.lineTo(canvas.width - padding, canvas.height - padding);
+    ctx.stroke();
+    
+    // Y轴 (左侧 - Rating)
+    ctx.beginPath();
+    ctx.moveTo(padding, padding);
+    ctx.lineTo(padding, canvas.height - padding);
+    ctx.stroke();
+    
+    // Y轴 (右侧 - Win Rate)
+    ctx.beginPath();
+    ctx.moveTo(canvas.width - padding, padding);
+    ctx.lineTo(canvas.width - padding, canvas.height - padding);
+    ctx.stroke();
+    
+    // 绘制Rating曲线
+    ctx.strokeStyle = '#2196F3';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    
+    ratings.forEach((rating, index) => {
+        const x = padding + (index / (ratings.length - 1)) * chartWidth;
+        const y = canvas.height - padding - ((rating - minRating) / (maxRating - minRating)) * chartHeight;
+        
+        if (index === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    });
+    ctx.stroke();
+    
+    // 绘制Win Rate曲线
+    ctx.strokeStyle = '#4CAF50';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    
+    winRates.forEach((winRate, index) => {
+        const x = padding + (index / (winRates.length - 1)) * chartWidth;
+        const y = canvas.height - padding - ((winRate - minWinRate) / (maxWinRate - minWinRate)) * chartHeight;
+        
+        if (index === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    });
+    ctx.stroke();
+    
+    // 添加图例
+    ctx.fillStyle = '#2196F3';
+    ctx.fillRect(padding, 10, 20, 10);
+    ctx.fillStyle = '#333';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText('Rating', padding + 25, 20);
+    
+    ctx.fillStyle = '#4CAF50';
+    ctx.fillRect(padding + 80, 10, 20, 10);
+    ctx.fillStyle = '#333';
+    ctx.fillText('Win Rate (%)', padding + 105, 20);
+    
+    // 添加Y轴标签
+    ctx.fillStyle = '#666';
+    ctx.font = '10px Arial';
+    ctx.textAlign = 'right';
+    
+    // Rating标签 (左侧)
+    for (let i = 0; i <= 5; i++) {
+        const rating = minRating + (maxRating - minRating) * (i / 5);
+        const y = canvas.height - padding - (i / 5) * chartHeight;
+        ctx.fillText(Math.round(rating), padding - 5, y + 3);
+    }
+    
+    // Win Rate标签 (右侧)
+    ctx.textAlign = 'left';
+    for (let i = 0; i <= 5; i++) {
+        const winRate = minWinRate + (maxWinRate - minWinRate) * (i / 5);
+        const y = canvas.height - padding - (i / 5) * chartHeight;
+        ctx.fillText(Math.round(winRate) + '%', canvas.width - padding + 5, y + 3);
+    }
+}
+
+// 更新现有的renderPlayersTable函数，添加点击事件
+function renderPlayersTable(players) {
+    const tbody = document.getElementById('playersTableBody');
+    tbody.innerHTML = '';
+    
+    players.forEach(player => {
+        const row = document.createElement('tr');
+        
+        // 添加点击事件到玩家名称
+        const nameCell = document.createElement('td');
+        nameCell.innerHTML = `<a href="#" class="player-name-link" onclick="showPlayerHistoryModal('${player.pid}', '${player.name}'); return false;">${player.name}</a>`;
+        
+        row.innerHTML = `
+            <td>${player.rank}</td>
+        `;
+        row.appendChild(nameCell);
+        row.innerHTML += `
+            <td>${player.versus_rating}</td>
+            <td>${player.versus_won}</td>
+            <td>${player.versus_plays}</td>
+            <td>${player.win_rate}%</td>
+            <td>${new Date(player.created_at).toLocaleDateString()}</td>
+        `;
+        
+        tbody.appendChild(row);
+    });
+}
+
+// 更新现有的loadRankingData函数
+async function loadRankingData() {
+    try {
+        showLoading();
+        
+        const searchParams = new URLSearchParams();
+        searchParams.append('page', currentPage);
+        searchParams.append('per_page', perPage);
+        searchParams.append('sort_by', sortBy);
+        searchParams.append('sort_order', sortOrder);
+        
+        if (searchQuery) {
+            searchParams.append('search', searchQuery);
+        }
+        
+        if (rankFilter) {
+            searchParams.append('rank_filter', rankFilter);
+        }
+        
+        const response = await fetch(`/api/player-stats-snapshot?${searchParams}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch ranking data');
+        }
+        
+        const data = await response.json();
+        
+        renderPlayersTable(data.players);
+        updatePagination(data.pagination);
+        
+        hideLoading();
+        
+    } catch (error) {
+        console.error('Error loading ranking data:', error);
+        hideLoading();
+        document.getElementById('playersTableBody').innerHTML = 
+            '<tr><td colspan="7" class="error">Error loading data</td></tr>';
+    }
+}
+
+// 全局变量
+let currentPage = 1;
+let perPage = 50;
+let sortBy = 'versus_rating';
+let sortOrder = 'desc';
+let searchQuery = '';
+let rankFilter = '';
+
+// 分页相关函数
+function updatePagination(pagination) {
+    const paginationContainer = document.getElementById('pagination');
+    if (!paginationContainer) return;
+    
+    let paginationHTML = '';
+    
+    // 上一页按钮
+    if (pagination.has_prev) {
+        paginationHTML += `<button onclick="goToPage(${pagination.current_page - 1})">Previous</button>`;
+    }
+    
+    // 页码按钮
+    const startPage = Math.max(1, pagination.current_page - 2);
+    const endPage = Math.min(pagination.total_pages, pagination.current_page + 2);
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const activeClass = i === pagination.current_page ? 'active' : '';
+        paginationHTML += `<button class="${activeClass}" onclick="goToPage(${i})">${i}</button>`;
+    }
+    
+    // 下一页按钮
+    if (pagination.has_next) {
+        paginationHTML += `<button onclick="goToPage(${pagination.current_page + 1})">Next</button>`;
+    }
+    
+    paginationContainer.innerHTML = paginationHTML;
+    
+    // 更新页面信息
+    const pageInfo = document.getElementById('pageInfo');
+    if (pageInfo) {
+        pageInfo.textContent = `Page ${pagination.current_page} of ${pagination.total_pages} (${pagination.total_count} total records)`;
+    }
+}
+
+function goToPage(page) {
+    currentPage = page;
+    loadRankingData();
+}
+
+// 搜索和过滤函数
+function handleSearch() {
+    const searchInput = document.getElementById('searchInput');
+    searchQuery = searchInput.value.trim();
+    currentPage = 1;
+    loadRankingData();
+}
+
+function handleSortChange() {
+    const sortSelect = document.getElementById('sortSelect');
+    const orderSelect = document.getElementById('orderSelect');
+    
+    sortBy = sortSelect.value;
+    sortOrder = orderSelect.value;
+    currentPage = 1;
+    loadRankingData();
+}
+
+function handleRankFilterChange() {
+    const rankFilterSelect = document.getElementById('rankFilterSelect');
+    rankFilter = rankFilterSelect.value;
+    currentPage = 1;
+    loadRankingData();
+}
+
+function handlePerPageChange() {
+    const perPageSelect = document.getElementById('perPageSelect');
+    perPage = parseInt(perPageSelect.value);
+    currentPage = 1;
+    loadRankingData();
+}
+
+// 初始化函数
+function initializeRankingPage() {
+    // 绑定事件监听器
+    document.getElementById('searchInput').addEventListener('input', handleSearch);
+    document.getElementById('sortSelect').addEventListener('change', handleSortChange);
+    document.getElementById('orderSelect').addEventListener('change', handleSortChange);
+    document.getElementById('rankFilterSelect').addEventListener('change', handleRankFilterChange);
+    document.getElementById('perPageSelect').addEventListener('change', handlePerPageChange);
+    
+    // 加载初始数据
+    loadRankingData();
+}
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    initializeRankingPage();
+});
+
+// 将必要的函数暴露到全局范围，供HTML内联事件使用
+window.showPlayerHistoryModal = showPlayerHistoryModal;
+window.closePlayerHistoryModal = closePlayerHistoryModal;
+window.showHistoryTab = showHistoryTab; 

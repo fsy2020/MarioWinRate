@@ -557,12 +557,12 @@
                     
                     row.innerHTML = `
                         <td><span class="${rankClass}">${rank}</span></td>
-                        <td><span class="player-name" onclick="window.selectPlayerFromTable('${player.pid}')">${this.escapeHtml(player.name)}</span></td>
+                        <td><span class="player-name" onclick="showPlayerHistoryModal('${player.pid}', '${this.escapeHtml(player.name)}')">${this.escapeHtml(player.name)}</span></td>
                         <td><span class="stat-value">${player.versus_rating.toLocaleString()}</span></td>
                         <td><span class="stat-value">${player.versus_won.toLocaleString()}</span></td>
                         <td><span class="stat-value">${player.versus_plays.toLocaleString()}</span></td>
                         <td><span class="stat-value win-rate">${player.win_rate}%</span></td>
-                        <td>${player.stat_date}</td>
+                        <td>${player.created_at ? new Date(player.created_at).toLocaleDateString() : 'N/A'}</td>
                     `;
                     
                     tbody.appendChild(row);
@@ -705,12 +705,12 @@
             async loadRankingStats() {
                 try {
                     const response = await fetch('/api/ranking-stats');
-                    const result = await response.json();
+                    const data = await response.json();
                     
-                    if (result.success) {
-                        this.renderRankingStats(result.data);
+                    if (data.error) {
+                        console.error('Failed to load ranking stats:', data.error);
                     } else {
-                        console.error('Failed to load ranking stats:', result.error);
+                        this.renderRankingStats(data);
                     }
                 } catch (error) {
                     console.error('Error loading ranking stats:', error);
@@ -721,7 +721,7 @@
             renderRankingStats(data) {
                 // 更新基本统计
                 document.getElementById('totalPlayers').textContent = data.total_players.toLocaleString();
-                document.getElementById('avgRating').textContent = data.avg_rating.toLocaleString();
+                document.getElementById('avgRating').textContent = Math.round(data.avg_rating).toLocaleString();
                 document.getElementById('avgWinRate').textContent = data.avg_win_rate + '%';
                 document.getElementById('totalWins').textContent = data.total_wins.toLocaleString();
                 
