@@ -157,11 +157,11 @@ class DatabaseAdapter:
             sql_query = """
                 SELECT DISTINCT p.pid, p.name
                 FROM player p
-                WHERE p.name LIKE ? OR p.pid LIKE ?
+                WHERE p.name LIKE ? OR p.pid LIKE ? OR p.code LIKE ?
                 ORDER BY p.name
                 LIMIT 20
             """
-            result = self.db.execute_query(sql_query, (search_query, search_query))
+            result = self.db.execute_query(sql_query, (search_query, search_query, search_query))
             if result:
                 return [{
                     'pid': row[0], 'name': row[1]

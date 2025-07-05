@@ -196,6 +196,84 @@ def search_players():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# 新API：按code搜索玩家
+@app.route('/api/search-by-code')
+def search_by_code():
+    try:
+        code = request.args.get('code', '').strip()
+        if not code:
+            return jsonify({'error': 'Code parameter is required'}), 400
+        
+        # 使用DatabaseAdapter处理数据库连接
+        if db.is_s3:
+            # S3数据库查询
+            query = """
+                SELECT p.pid, p.name, p.code, p.country, 
+                       pss.versus_rating, pss.versus_won, pss.versus_plays, pss.stat_date,
+                       CASE WHEN pss.versus_plays > 0 THEN (pss.versus_won * 100.0 / pss.versus_plays) ELSE 0 END as win_rate
+                FROM player p
+                LEFT JOIN player_stats_snapshot pss ON p.pid = pss.pid
+                WHERE p.code = ?
+                ORDER BY pss.stat_date DESC
+                LIMIT 1
+            """
+            result = db.db.execute_query(query, (code,))
+            
+            if result and result[0]:
+                row = result[0]
+                player_data = {
+                    'pid': row[0],
+                    'name': row[1],
+                    'code': row[2],
+                    'country': row[3],
+                    'versus_rating': row[4] or 0,
+                    'versus_won': row[5] or 0,
+                    'versus_plays': row[6] or 0,
+                    'stat_date': row[7],
+                    'win_rate': round(row[8], 2) if row[8] else 0
+                }
+                return jsonify({'success': True, 'player': player_data})
+            else:
+                return jsonify({'success': False, 'message': f'Player with code "{code}" not found'})
+        else:
+            # 本地数据库连接
+            import sqlite3
+            conn = sqlite3.connect('mario_filtered.db')
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT p.pid, p.name, p.code, p.country, 
+                       pss.versus_rating, pss.versus_won, pss.versus_plays, pss.stat_date,
+                       CASE WHEN pss.versus_plays > 0 THEN (pss.versus_won * 100.0 / pss.versus_plays) ELSE 0 END as win_rate
+                FROM player p
+                LEFT JOIN player_stats_snapshot pss ON p.pid = pss.pid
+                WHERE p.code = ?
+                ORDER BY pss.stat_date DESC
+                LIMIT 1
+            """, (code,))
+            
+            row = cursor.fetchone()
+            conn.close()
+            
+            if row:
+                player_data = {
+                    'pid': row[0],
+                    'name': row[1],
+                    'code': row[2],
+                    'country': row[3],
+                    'versus_rating': row[4] or 0,
+                    'versus_won': row[5] or 0,
+                    'versus_plays': row[6] or 0,
+                    'stat_date': row[7],
+                    'win_rate': round(row[8], 2) if row[8] else 0
+                }
+                return jsonify({'success': True, 'player': player_data})
+            else:
+                return jsonify({'success': False, 'message': f'Player with code "{code}" not found'})
+                
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # 新API：重新加载cron.log文件
 @app.route('/api/reload-player-names', methods=['POST'])
 def reload_player_names():
@@ -256,8 +334,8 @@ def get_player_stats_snapshot():
                 params.append(latest_date)
             
             if search:
-                where_conditions.append("(p.name LIKE ? OR pss.pid LIKE ?)")
-                params.extend([f'%{search}%', f'%{search}%'])
+                where_conditions.append("(p.name LIKE ? OR pss.pid LIKE ? OR p.code LIKE ?)")
+                params.extend([f'%{search}%', f'%{search}%', f'%{search}%'])
             
             if where_conditions:
                 base_query += " WHERE " + " AND ".join(where_conditions)
@@ -331,8 +409,8 @@ def get_player_stats_snapshot():
                 params.append(latest_date)
             
             if search:
-                where_conditions.append("(p.name LIKE ? OR pss.pid LIKE ?)")
-                params.extend([f'%{search}%', f'%{search}%'])
+                where_conditions.append("(p.name LIKE ? OR pss.pid LIKE ? OR p.code LIKE ?)")
+                params.extend([f'%{search}%', f'%{search}%', f'%{search}%'])
             
             if where_conditions:
                 base_query += " WHERE " + " AND ".join(where_conditions)
