@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
   schedule:
     # Run daily at 4 AM Beijing time (8 PM UTC the previous day)
-    - cron: '0 20 * * *'
+    - cron: '20 3 * * *'
 
 jobs:
   deploy:
