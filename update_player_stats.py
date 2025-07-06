@@ -197,9 +197,12 @@ class PlayerStatsUpdater:
                 
                 for user_data in users_data:
                     if isinstance(user_data, dict):
-                        # Extract player information
+                        # Extract player information - convert PID to string for consistency
+                        raw_pid = user_data.get('pid', '')
+                        pid_str = str(raw_pid) if raw_pid else ''
+                        
                         player_info = {
-                            'pid': user_data.get('pid', ''),
+                            'pid': pid_str,
                             'name': user_data.get('name', ''),
                             'code': user_data.get('code', ''),
                             'country': user_data.get('country', ''),
@@ -209,7 +212,7 @@ class PlayerStatsUpdater:
                             'created_at': datetime.now().isoformat()  # Use current timestamp
                         }
                         
-                        # Validate required fields
+                        # Validate required fields - now comparing string PIDs
                         if player_info['pid'] and player_info['pid'] in requested_pids:
                             processed_players.append(player_info)
                 
