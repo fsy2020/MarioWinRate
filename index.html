@@ -185,22 +185,6 @@
             font-size: 13px;
         }
 
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-        }
-
-        .loading i {
-            font-size: 1.7rem;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
         @media (max-width: 768px) {
             .controls-grid {
                 grid-template-columns: 1fr;
@@ -340,12 +324,7 @@
 
         <!-- Players Table -->
         <section class="players-table-container">
-            <div id="loadingIndicator" class="loading">
-                <i class="fas fa-spinner"></i>
-                <p data-i18n="loading">Loading data...</p>
-            </div>
-
-            <div id="playersTableWrapper" style="display: none;">
+            <div id="playersTableWrapper">
                 <table class="players-table">
                     <thead>
                         <tr>
@@ -555,6 +534,11 @@
                     else if (rank === 3) rankClass += ' rank-bronze';
                     else if (rank <= 10) rankClass += ' rank-top10';
                     
+                    // 格式化日期显示
+                    const dateDisplay = player.created_at ? 
+                        new Date(player.created_at).toLocaleDateString() : 
+                        'N/A';
+                    
                     row.innerHTML = `
                         <td><span class="${rankClass}">${rank}</span></td>
                         <td><span class="player-name" onclick="showPlayerHistoryModal('${player.pid}', '${this.escapeHtml(player.name)}')">${this.escapeHtml(player.name)}</span></td>
@@ -562,7 +546,7 @@
                         <td><span class="stat-value">${player.versus_won.toLocaleString()}</span></td>
                         <td><span class="stat-value">${player.versus_plays.toLocaleString()}</span></td>
                         <td><span class="stat-value win-rate">${player.win_rate}%</span></td>
-                        <td>${player.created_at ? new Date(player.created_at).toLocaleDateString() : 'N/A'}</td>
+                        <td>${dateDisplay}</td>
                     `;
                     
                     tbody.appendChild(row);
@@ -653,24 +637,26 @@
             }
 
             showLoading() {
-                document.getElementById('loadingIndicator').style.display = 'block';
                 document.getElementById('playersTableWrapper').style.display = 'none';
             }
 
             hideLoading() {
-                document.getElementById('loadingIndicator').style.display = 'none';
                 document.getElementById('playersTableWrapper').style.display = 'block';
             }
 
             showError(message) {
-                const loadingEl = document.getElementById('loadingIndicator');
+                const tableBody = document.getElementById('playersTableBody');
                 
                 // 获取国际化的错误信息
                 const errorPrefix = this.getI18nText('error-loading');
                 
-                loadingEl.innerHTML = `
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <p>${errorPrefix}: ${message}</p>
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px; color: #e74c3c;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>${errorPrefix}: ${message}</p>
+                        </td>
+                    </tr>
                 `;
                 this.hideLoading();
             }

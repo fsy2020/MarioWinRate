@@ -1104,17 +1104,13 @@ function displayPlayerHistory(data) {
         </div>
         
         <div class="history-tabs">
-            <button class="tab-button active" onclick="showHistoryTab('chart')">Performance Chart</button>
-            <button class="tab-button" onclick="showHistoryTab('table')">Data Table</button>
+            <button class="tab-button active" onclick="showHistoryTab('table')">Data Table</button>
+            <button class="tab-button" onclick="showHistoryTab('chart')">Performance Chart</button>
         </div>
         
-        <div id="historyChart" class="tab-content active">
-            <canvas id="playerHistoryChart" width="800" height="400"></canvas>
-        </div>
-        
-        <div id="historyTable" class="tab-content">
+        <div id="historyTable" class="tab-content active">
             <div class="stats-summary">
-                <h3>30-Day Statistics</h3>
+                <h3>${getI18nTextForModal('daily-stats-title', '30-Day Daily Performance Statistics')}</h3>
                 <div class="stats-grid">
                     <div class="stat-item">
                         <label>Max Rating:</label>
@@ -1129,14 +1125,6 @@ function displayPlayerHistory(data) {
                         <span>${stats.avg_rating || 'N/A'}</span>
                     </div>
                     <div class="stat-item">
-                        <label>Max Win Rate:</label>
-                        <span>${stats.max_win_rate || 'N/A'}%</span>
-                    </div>
-                    <div class="stat-item">
-                        <label>Min Win Rate:</label>
-                        <span>${stats.min_win_rate || 'N/A'}%</span>
-                    </div>
-                    <div class="stat-item">
                         <label>Avg Win Rate:</label>
                         <span>${stats.avg_win_rate || 'N/A'}%</span>
                     </div>
@@ -1147,25 +1135,61 @@ function displayPlayerHistory(data) {
                 <table>
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>Rating</th>
-                            <th>Wins</th>
-                            <th>Total Games</th>
-                            <th>Win Rate</th>
+                            <th>${getI18nTextForModal('date', 'Date')}</th>
+                            <th>${getI18nTextForModal('rating', 'Rating')}</th>
+                            <th>${getI18nTextForModal('todays-wins', "Today's Wins")}</th>
+                            <th>${getI18nTextForModal('todays-games', "Today's Games")}</th>
+                            <th>${getI18nTextForModal('todays-winrate', "Today's Win Rate")}</th>
                         </tr>
                     </thead>
                     <tbody>
     `;
     
-    history.forEach(record => {
+    // 计算每日的增量数据并显示
+    history.forEach((record, index) => {
         const date = new Date(record.created_at).toLocaleDateString();
+        
+        // 计算当日新增的wins和plays
+        let dailyWins = 0;
+        let dailyPlays = 0;
+        
+        if (index === 0) {
+            // 最新一天（今天）：如果只有一条记录，显示累计值；如果有多条记录，计算与前一天的差值
+            if (history.length === 1) {
+                dailyWins = record.versus_won;
+                dailyPlays = record.versus_plays;
+            } else {
+                const prevRecord = history[1];
+                dailyWins = record.versus_won - prevRecord.versus_won;
+                dailyPlays = record.versus_plays - prevRecord.versus_plays;
+            }
+        } else {
+            // 历史数据：计算与下一条记录的差值
+            if (index < history.length - 1) {
+                const nextRecord = history[index + 1];
+                dailyWins = record.versus_won - nextRecord.versus_won;
+                dailyPlays = record.versus_plays - nextRecord.versus_plays;
+            } else {
+                // 最早的记录，显示累计值
+                dailyWins = record.versus_won;
+                dailyPlays = record.versus_plays;
+            }
+        }
+        
+        // 确保增量数据不为负数
+        dailyWins = Math.max(0, dailyWins);
+        dailyPlays = Math.max(0, dailyPlays);
+        
+        // 计算当日胜率
+        const dailyWinRate = dailyPlays > 0 ? ((dailyWins / dailyPlays) * 100).toFixed(2) : 0;
+        
         historyHTML += `
             <tr>
                 <td>${date}</td>
                 <td>${record.versus_rating}</td>
-                <td>${record.versus_won}</td>
-                <td>${record.versus_plays}</td>
-                <td>${record.win_rate}%</td>
+                <td>${dailyWins}</td>
+                <td>${dailyPlays}</td>
+                <td>${dailyWinRate}%</td>
             </tr>
         `;
     });
@@ -1174,6 +1198,10 @@ function displayPlayerHistory(data) {
                     </tbody>
                 </table>
             </div>
+        </div>
+        
+        <div id="historyChart" class="tab-content">
+            <canvas id="playerHistoryChart" width="800" height="400"></canvas>
         </div>
     `;
     
@@ -1487,3 +1515,36 @@ document.addEventListener('DOMContentLoaded', function() {
 window.showPlayerHistoryModal = showPlayerHistoryModal;
 window.closePlayerHistoryModal = closePlayerHistoryModal;
 window.showHistoryTab = showHistoryTab; 
+
+// 历史模态框的国际化辅助函数
+function getI18nTextForModal(key, defaultText) {
+    const modalTexts = {
+        'en': {
+            'date': 'Date',
+            'rating': 'Rating', 
+            'todays-wins': "Today's Wins",
+            'todays-games': "Today's Games",
+            'todays-winrate': "Today's Win Rate",
+            'daily-stats-title': '30-Day Daily Performance Statistics'
+        },
+        'zh-CN': {
+            'date': '日期',
+            'rating': '分数',
+            'todays-wins': '今日胜利数',
+            'todays-games': '今日游戏数',
+            'todays-winrate': '今日胜率',
+            'daily-stats-title': '30天每日表现统计'
+        },
+        'ja': {
+            'date': '日付',
+            'rating': 'レーティング',
+            'todays-wins': '今日の勝利数',
+            'todays-games': '今日のゲーム数',
+            'todays-winrate': '今日の勝率',
+            'daily-stats-title': '30日間の日別パフォーマンス統計'
+        }
+    };
+    
+    const currentLang = i18n.currentLanguage;
+    return modalTexts[currentLang] && modalTexts[currentLang][key] ? modalTexts[currentLang][key] : defaultText;
+} 
