@@ -72,17 +72,17 @@ jobs:
       run: |
         aws s3 cp ./mario_filtered.db s3://${{ secrets.S3_BUCKET_NAME }}/mario_filtered.db
     
-    - name: Upload logs to S3
-      run: |
-        aws s3 cp ./update_player_stats.log s3://${{ secrets.S3_BUCKET_NAME }}/logs/update_player_stats_$(date +%Y%m%d_%H%M%S).log
-        if [ -f migration.log ]; then
-          aws s3 cp ./migration.log s3://${{ secrets.S3_BUCKET_NAME }}/logs/migration_$(date +%Y%m%d_%H%M%S).log
-        fi
-      continue-on-error: true
+    # - name: Upload logs to S3
+    #   run: |
+    #     aws s3 cp ./update_player_stats.log s3://${{ secrets.S3_BUCKET_NAME }}/logs/update_player_stats_$(date +%Y%m%d_%H%M%S).log
+    #     if [ -f migration.log ]; then
+    #       aws s3 cp ./migration.log s3://${{ secrets.S3_BUCKET_NAME }}/logs/migration_$(date +%Y%m%d_%H%M%S).log
+    #     fi
+    #   continue-on-error: true
     
-    - name: Send notification on failure
-      if: failure()
-      run: |
-        echo "Player stats update failed at $(date)"
-        # Add notification logic here (email, Slack, etc.)
+    # - name: Send notification on failure
+    #   if: failure()
+    #   run: |
+    #     echo "Player stats update failed at $(date)"
+    #     # Add notification logic here (email, Slack, etc.)
 

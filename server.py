@@ -741,36 +741,6 @@ def get_ranking_stats():
             stats_result = db.db.execute_query(stats_query, (latest_date,))
             stats = stats_result[0] if stats_result else (0, 0, 0, 0, 0)
             total_players, avg_rating, avg_win_rate, total_wins, total_plays = stats
-            
-            # 获取分数分布
-            rating_dist_query = """
-                SELECT 
-                    COUNT(CASE WHEN pss.versus_rating >= 5000 THEN 1 END) as rating_5000_plus,
-                    COUNT(CASE WHEN pss.versus_rating >= 4000 AND pss.versus_rating < 5000 THEN 1 END) as rating_4000_4999,
-                    COUNT(CASE WHEN pss.versus_rating >= 3000 AND pss.versus_rating < 4000 THEN 1 END) as rating_3000_3999,
-                    COUNT(CASE WHEN pss.versus_rating >= 2000 AND pss.versus_rating < 3000 THEN 1 END) as rating_2000_2999,
-                    COUNT(CASE WHEN pss.versus_rating < 2000 THEN 1 END) as rating_under_2000
-                FROM player p 
-                JOIN player_stats_snapshot pss ON p.pid = pss.pid
-                WHERE DATE(pss.created_at) = ?
-            """
-            rating_dist_result = db.db.execute_query(rating_dist_query, (latest_date,))
-            rating_distribution = rating_dist_result[0] if rating_dist_result else (0, 0, 0, 0, 0)
-            
-            # 获取胜率分布
-            winrate_dist_query = """
-                SELECT 
-                    COUNT(CASE WHEN (pss.versus_won * 100.0 / pss.versus_plays) >= 80 THEN 1 END) as winrate_80_plus,
-                    COUNT(CASE WHEN (pss.versus_won * 100.0 / pss.versus_plays) >= 60 AND (pss.versus_won * 100.0 / pss.versus_plays) < 80 THEN 1 END) as winrate_60_79,
-                    COUNT(CASE WHEN (pss.versus_won * 100.0 / pss.versus_plays) >= 40 AND (pss.versus_won * 100.0 / pss.versus_plays) < 60 THEN 1 END) as winrate_40_59,
-                    COUNT(CASE WHEN (pss.versus_won * 100.0 / pss.versus_plays) >= 20 AND (pss.versus_won * 100.0 / pss.versus_plays) < 40 THEN 1 END) as winrate_20_39,
-                    COUNT(CASE WHEN (pss.versus_won * 100.0 / pss.versus_plays) < 20 THEN 1 END) as winrate_under_20
-                FROM player p 
-                JOIN player_stats_snapshot pss ON p.pid = pss.pid
-                WHERE DATE(pss.created_at) = ? AND pss.versus_plays > 0
-            """
-            winrate_dist_result = db.db.execute_query(winrate_dist_query, (latest_date,))
-            winrate_distribution = winrate_dist_result[0] if winrate_dist_result else (0, 0, 0, 0, 0)
         else:
             # 本地数据库连接
             import sqlite3
@@ -795,36 +765,6 @@ def get_ranking_stats():
             
             stats = cursor.fetchone()
             total_players, avg_rating, avg_win_rate, total_wins, total_plays = stats
-            
-            # 获取分数分布
-            cursor.execute("""
-                SELECT 
-                    COUNT(CASE WHEN pss.versus_rating >= 5000 THEN 1 END) as rating_5000_plus,
-                    COUNT(CASE WHEN pss.versus_rating >= 4000 AND pss.versus_rating < 5000 THEN 1 END) as rating_4000_4999,
-                    COUNT(CASE WHEN pss.versus_rating >= 3000 AND pss.versus_rating < 4000 THEN 1 END) as rating_3000_3999,
-                    COUNT(CASE WHEN pss.versus_rating >= 2000 AND pss.versus_rating < 3000 THEN 1 END) as rating_2000_2999,
-                    COUNT(CASE WHEN pss.versus_rating < 2000 THEN 1 END) as rating_under_2000
-                FROM player p 
-                JOIN player_stats_snapshot pss ON p.pid = pss.pid
-                WHERE DATE(pss.created_at) = ?
-            """, (latest_date,))
-            
-            rating_distribution = cursor.fetchone()
-            
-            # 获取胜率分布
-            cursor.execute("""
-                SELECT 
-                    COUNT(CASE WHEN (pss.versus_won * 100.0 / pss.versus_plays) >= 80 THEN 1 END) as winrate_80_plus,
-                    COUNT(CASE WHEN (pss.versus_won * 100.0 / pss.versus_plays) >= 60 AND (pss.versus_won * 100.0 / pss.versus_plays) < 80 THEN 1 END) as winrate_60_79,
-                    COUNT(CASE WHEN (pss.versus_won * 100.0 / pss.versus_plays) >= 40 AND (pss.versus_won * 100.0 / pss.versus_plays) < 60 THEN 1 END) as winrate_40_59,
-                    COUNT(CASE WHEN (pss.versus_won * 100.0 / pss.versus_plays) >= 20 AND (pss.versus_won * 100.0 / pss.versus_plays) < 40 THEN 1 END) as winrate_20_39,
-                    COUNT(CASE WHEN (pss.versus_won * 100.0 / pss.versus_plays) < 20 THEN 1 END) as winrate_under_20
-                FROM player p 
-                JOIN player_stats_snapshot pss ON p.pid = pss.pid
-                WHERE DATE(pss.created_at) = ? AND pss.versus_plays > 0
-            """, (latest_date,))
-            
-            winrate_distribution = cursor.fetchone()
             conn.close()
 
         # 格式化响应数据
@@ -834,21 +774,7 @@ def get_ranking_stats():
             'avg_win_rate': round(avg_win_rate, 2) if avg_win_rate else 0,
             'total_wins': total_wins,
             'total_plays': total_plays,
-            'latest_date': latest_date,
-            'rating_distribution': {
-                '5000+': rating_distribution[0],
-                '4000-4999': rating_distribution[1],
-                '3000-3999': rating_distribution[2],
-                '2000-2999': rating_distribution[3],
-                'under_2000': rating_distribution[4]
-            },
-            'winrate_distribution': {
-                '80%+': winrate_distribution[0],
-                '60-79%': winrate_distribution[1],
-                '40-59%': winrate_distribution[2],
-                '20-39%': winrate_distribution[3],
-                'under_20%': winrate_distribution[4]
-            }
+            'latest_date': latest_date
         })
         
     except Exception as e:
