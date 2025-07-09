@@ -16,6 +16,59 @@
             padding: 20px;
         }
 
+        /* 全页面加载状态 */
+        .page-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }
+
+        .page-loading-overlay.hide {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .page-loading-content {
+            text-align: center;
+            color: white;
+        }
+
+        .page-loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid rgba(255, 255, 255, 0.3);
+            border-top: 6px solid white;
+            border-radius: 50%;
+            animation: pageLoadingSpin 1s linear infinite;
+            margin: 0 auto 30px;
+        }
+
+        .page-loading-text {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .page-loading-subtext {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+
+        @keyframes pageLoadingSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         .controls-section {
             background: white;
             border-radius: 15px;
@@ -203,6 +256,15 @@
     </style>
 </head>
 <body>
+    <!-- 全页面加载状态 -->
+    <div class="page-loading-overlay" id="pageLoadingOverlay">
+        <div class="page-loading-content">
+            <div class="page-loading-spinner"></div>
+            <div class="page-loading-text" data-i18n="loading-page">正在加载统计数据...</div>
+            <div class="page-loading-subtext" data-i18n="loading-subtext">请稍候，正在准备您的游戏统计数据</div>
+        </div>
+    </div>
+
     <div class="main-container">
         <!-- Header -->
         <header class="header">
@@ -305,21 +367,6 @@
                     </div>
                 </div>
             </div>
-            
-            <div class="distribution-grid">
-                <div class="distribution-card">
-                    <h3><i class="fas fa-medal"></i> <span data-i18n="rating-distribution">Rating Distribution</span></h3>
-                    <div class="distribution-bars" id="ratingDistribution">
-                        <!-- 分数分布将在这里动态生成 -->
-                    </div>
-                </div>
-                <div class="distribution-card">
-                    <h3><i class="fas fa-target"></i> <span data-i18n="winrate-distribution">Win Rate Distribution</span></h3>
-                    <div class="distribution-bars" id="winrateDistribution">
-                        <!-- 胜率分布将在这里动态生成 -->
-                    </div>
-                </div>
-            </div>
         </section>
 
         <!-- Players Table -->
@@ -409,10 +456,61 @@
                 this.search = '';
                 this.rankFilter = '';  // 新增：排名过滤
                 this.isLoading = false;
+                this.isInitializing = true; // 标记是否在初始化阶段
 
                 this.initEventListeners();
-                this.loadPlayers();
-                this.loadRankingStats(); // 加载排名统计
+                
+                // 显示初始加载状态
+                this.showInitialLoading();
+                
+                // 并行加载数据和统计信息
+                this.initializeData();
+            }
+
+            async initializeData() {
+                try {
+                    // 并行加载玩家数据和排名统计
+                    await Promise.all([
+                        this.loadPlayers(),
+                        this.loadRankingStats()
+                    ]);
+                } catch (error) {
+                    console.error('初始化数据时出错:', error);
+                } finally {
+                    // 初始化完成，隐藏加载状态
+                    this.isInitializing = false;
+                    this.hideInitialLoading();
+                }
+            }
+
+            showInitialLoading() {
+                const overlay = document.getElementById('pageLoadingOverlay');
+                if (overlay) {
+                    overlay.classList.remove('hide');
+                    // 更新加载文本为当前语言
+                    this.updateLoadingText();
+                }
+            }
+
+            hideInitialLoading() {
+                const overlay = document.getElementById('pageLoadingOverlay');
+                if (overlay) {
+                    overlay.classList.add('hide');
+                }
+            }
+
+            updateLoadingText() {
+                // 获取当前语言设置
+                const currentLang = window.i18n ? window.i18n.currentLanguage : 'zh-CN';
+                const loadingText = document.querySelector('.page-loading-text');
+                const loadingSubtext = document.querySelector('.page-loading-subtext');
+                
+                if (loadingText && window.t) {
+                    loadingText.textContent = window.t('loading-page');
+                }
+                if (loadingSubtext && window.t) {
+                    loadingSubtext.textContent = window.t('loading-subtext');
+                }
             }
 
             initEventListeners() {
@@ -486,7 +584,11 @@
                 if (this.isLoading) return;
                 
                 this.isLoading = true;
-                this.showLoading();
+                
+                // 只有在非初始化阶段才显示表格加载状态
+                if (!this.isInitializing) {
+                    this.showLoading();
+                }
 
                 try {
                     const params = new URLSearchParams({
@@ -508,7 +610,11 @@
                     this.renderPlayersTable(data.players, data.pagination);
                     this.renderPagination(data.pagination);
                     this.updateSortHeaders();
-                    this.hideLoading();
+                    
+                    // 只有在非初始化阶段才隐藏表格加载状态
+                    if (!this.isInitializing) {
+                        this.hideLoading();
+                    }
 
                 } catch (error) {
                     console.error('Error loading players:', error);
@@ -534,9 +640,13 @@
                     else if (rank === 3) rankClass += ' rank-bronze';
                     else if (rank <= 10) rankClass += ' rank-top10';
                     
-                    // 格式化日期显示
+                    // 格式化日期显示 - 修复日期显示问题
                     const dateDisplay = player.created_at ? 
-                        new Date(player.created_at).toLocaleDateString() : 
+                        (() => {
+                            const dateObj = new Date(player.created_at);
+                            dateObj.setDate(dateObj.getDate() + 1);
+                            return dateObj.toLocaleDateString();
+                        })() : 
                         'N/A';
                     
                     row.innerHTML = `
@@ -638,10 +748,12 @@
 
             showLoading() {
                 document.getElementById('playersTableWrapper').style.display = 'none';
+                document.getElementById('pageLoadingOverlay').classList.remove('hide');
             }
 
             hideLoading() {
                 document.getElementById('playersTableWrapper').style.display = 'block';
+                document.getElementById('pageLoadingOverlay').classList.add('hide');
             }
 
             showError(message) {
@@ -710,53 +822,6 @@
                 document.getElementById('avgRating').textContent = Math.round(data.avg_rating).toLocaleString();
                 document.getElementById('avgWinRate').textContent = data.avg_win_rate + '%';
                 document.getElementById('totalWins').textContent = data.total_wins.toLocaleString();
-                
-                // 渲染分数分布
-                this.renderDistribution('ratingDistribution', data.rating_distribution, 'rating');
-                
-                // 渲染胜率分布
-                this.renderDistribution('winrateDistribution', data.winrate_distribution, 'winrate');
-            }
-            
-            // 渲染分布图
-            renderDistribution(containerId, distribution, type) {
-                const container = document.getElementById(containerId);
-                container.innerHTML = '';
-                
-                const total = Object.values(distribution).reduce((sum, count) => sum + count, 0);
-                
-                Object.entries(distribution).forEach(([range, count]) => {
-                    const percentage = total > 0 ? (count / total * 100) : 0;
-                    
-                    const barElement = document.createElement('div');
-                    barElement.className = 'distribution-bar';
-                    
-                    // 确定样式类
-                    let barClass = '';
-                    if (type === 'rating') {
-                        if (range.includes('5000')) barClass = 'bar-rating-5000';
-                        else if (range.includes('4000')) barClass = 'bar-rating-4000';
-                        else if (range.includes('3000')) barClass = 'bar-rating-3000';
-                        else if (range.includes('2000')) barClass = 'bar-rating-2000';
-                        else barClass = 'bar-rating-under';
-                    } else {
-                        if (range.includes('80')) barClass = 'bar-winrate-80';
-                        else if (range.includes('60')) barClass = 'bar-winrate-60';
-                        else if (range.includes('40')) barClass = 'bar-winrate-40';
-                        else if (range.includes('20')) barClass = 'bar-winrate-20';
-                        else barClass = 'bar-winrate-under';
-                    }
-                    
-                    barElement.innerHTML = `
-                        <div class="bar-label">${range}</div>
-                        <div class="bar-visual">
-                            <div class="bar-fill ${barClass}" style="width: ${percentage}%"></div>
-                        </div>
-                        <div class="bar-count">${count}</div>
-                    `;
-                    
-                    container.appendChild(barElement);
-                });
             }
             
             // 刷新分页显示（用于语言切换时更新）

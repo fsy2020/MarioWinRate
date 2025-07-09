@@ -25,6 +25,8 @@ const i18n = {
             'avg-winrate': 'Average Win Rate',
             'total-wins': 'Total Wins',
             'loading': 'Loading data...',
+            'loading-page': 'Loading Statistics...',
+            'loading-subtext': 'Please wait, preparing your game statistics',
             'rank': 'Rank',
             'player-name': 'Player Name',
             'rating': 'Rating',
@@ -69,6 +71,8 @@ const i18n = {
             'avg-winrate': '平均胜率',
             'total-wins': '总胜利数',
             'loading': '正在加载数据...',
+            'loading-page': '正在加载统计数据...',
+            'loading-subtext': '请稍候，正在准备您的游戏统计数据',
             'rank': '排名',
             'player-name': '玩家名称',
             'rating': '分数',
@@ -113,6 +117,8 @@ const i18n = {
             'avg-winrate': '平均勝率',
             'total-wins': '総勝利数',
             'loading': 'データを読み込み中...',
+            'loading-page': '統計データを読み込み中...',
+            'loading-subtext': 'お待ちください、ゲーム統計データを準備しています',
             'rank': 'ランク',
             'player-name': 'プレイヤー名',
             'rating': 'レーティング',
@@ -232,6 +238,21 @@ function updateDynamicContent() {
     const loadingText = document.querySelector('.loading p');
     if (loadingText) {
         loadingText.textContent = t('loading');
+    }
+    
+    // 更新全页面加载状态文本
+    const pageLoadingText = document.querySelector('.page-loading-text');
+    const pageLoadingSubtext = document.querySelector('.page-loading-subtext');
+    if (pageLoadingText) {
+        pageLoadingText.textContent = t('loading-page');
+    }
+    if (pageLoadingSubtext) {
+        pageLoadingSubtext.textContent = t('loading-subtext');
+    }
+    
+    // 更新PlayersDataViewer的加载状态（如果存在）
+    if (window.playersDataViewer && typeof window.playersDataViewer.updateLoadingText === 'function') {
+        window.playersDataViewer.updateLoadingText();
     }
     
     // 更新分页显示（如果存在）
@@ -1141,7 +1162,10 @@ function displayPlayerHistory(data) {
     
     // 计算每日的增量数据并显示
     history.forEach((record, index) => {
-        const date = new Date(record.created_at).toLocaleDateString();
+        // 修复日期显示 - 加1天
+        const dateObj = new Date(record.created_at);
+        dateObj.setDate(dateObj.getDate() + 1);
+        const date = dateObj.toLocaleDateString();
         
         // 计算当日新增的wins和plays
         let dailyWins = 0;
@@ -1361,7 +1385,11 @@ function renderPlayersTable(players) {
             <td>${player.versus_won}</td>
             <td>${player.versus_plays}</td>
             <td>${player.win_rate}%</td>
-            <td>${new Date(player.created_at).toLocaleDateString()}</td>
+            <td>${(() => {
+                const dateObj = new Date(player.created_at);
+                dateObj.setDate(dateObj.getDate() + 1);
+                return dateObj.toLocaleDateString();
+            })()}</td>
         `;
         
         tbody.appendChild(row);
