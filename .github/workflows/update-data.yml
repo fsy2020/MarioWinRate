@@ -53,24 +53,24 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
     
-    - name: Download database from S3
-      run: |
-        aws s3 cp s3://${{ secrets.S3_BUCKET_NAME }}/mario_filtered.db ./mario_filtered.db
+    # - name: Download database from S3
+    #   run: |
+    #     aws s3 cp s3://${{ secrets.S3_BUCKET_NAME }}/mario_filtered.db ./mario_filtered.db
     
     # - name: Run database migration (if needed)
     #   run: |
     #     python migrate_database.py mario_filtered.db
     #   continue-on-error: true
     
-    - name: Update player stats
-      run: |
-        python update_player_stats.py
+    # - name: Update player stats
+    #   run: |
+    #     python update_player_stats.py
       # env:
       #   TZ: Asia/Shanghai
     
-    - name: Upload updated database to S3
-      run: |
-        aws s3 cp ./mario_filtered.db s3://${{ secrets.S3_BUCKET_NAME }}/mario_filtered.db
+    # - name: Upload updated database to S3
+    #   run: |
+    #     aws s3 cp ./mario_filtered.db s3://${{ secrets.S3_BUCKET_NAME }}/mario_filtered.db
     
     # - name: Upload logs to S3
     #   run: |
